@@ -1,0 +1,9 @@
+{
+    "dependencies": [
+        "."
+    ],
+    "graphs": {
+        "manganize_agent": "main.py:agent"
+    },
+    "env": ".env"
+}
