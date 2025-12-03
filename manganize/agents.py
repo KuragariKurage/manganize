@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from langchain.agents import create_agent
@@ -16,16 +17,26 @@ from manganize.tools import generate_manga_image, retrieve_webpage
 
 class ManganizeAgent:
     def __init__(self, model: BaseChatModel | None = None):
+        today_date = datetime.now().strftime("%Y-%m-%d")
+
         self.researcher = create_agent(
             model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             tools=[retrieve_webpage, DuckDuckGoSearchRun()],
-            system_prompt=SystemMessage(content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT),
+            system_prompt=SystemMessage(
+                content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT
+                + "\n今日は"
+                + today_date
+                + "です。"
+            ),
             checkpointer=InMemorySaver(),
         )
         self.scenario_writer = create_agent(
             model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             system_prompt=SystemMessage(
                 content=MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT
+                + "\n今日は"
+                + today_date
+                + "です。"
             ),
             checkpointer=InMemorySaver(),
         )
