@@ -1,27 +1,39 @@
+import argparse
 from io import BytesIO
 
 from langchain.chat_models import init_chat_model
+from langchain_core.runnables import RunnableConfig
 from PIL import Image
 
 from manganize.agents import ManganizeAgent
 
-agent = ManganizeAgent(model=init_chat_model(model="google_genai:gemini-3-pro-preview"))
+
+def local_graph():
+    return ManganizeAgent(
+        model=init_chat_model(model="google_genai:gemini-2.5-flash")
+    ).compile_graph()
 
 
 def main():
-    result = agent(
-        # (
-        #     Path(
-        #         "/mnt/c/Users/atsu/Documents/obsidian/clippings/Post-Training Generative Recommenders with Advantage-Weighted Supervised Finetuning.md"
-        #     )
-        # ).read_text(),
-        "https://unsloth.ai/blog/r1-reasoning",
-        thread_id="1",
+    parser = argparse.ArgumentParser(
+        description="テキストやURLをマンガ画像に変換します"
     )
+    parser.add_argument("source", help="変換するURLまたはテキスト")
 
-    if result.get("generated_image"):
-        image = Image.open(BytesIO(result.get("generated_image")))
-        image.save("generated_image.png")
+    args = parser.parse_args()
+
+    graph = local_graph()
+
+    config: RunnableConfig = {"configurable": {"thread_id": "1"}}
+
+    for chunk in graph.stream({"topic": args.source}, config, stream_mode="values"):
+        if chunk.get("generated_image"):
+            image = Image.open(BytesIO(chunk.get("generated_image")))
+            image.save("generated_image.png")
+            print("image saved.")
+            break
+        else:
+            print(chunk)
 
 
 if __name__ == "__main__":

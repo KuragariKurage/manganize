@@ -3,7 +3,7 @@
         "."
     ],
     "graphs": {
-        "manganize_agent": "main.py:agent"
+        "manganize_agent": "./main.py:local_graph"
     },
     "env": ".env"
 }
