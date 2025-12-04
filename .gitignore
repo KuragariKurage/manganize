@@ -287,3 +287,4 @@ $RECYCLE.BIN/
 *.lnk
 
 generated_image.png
+output/

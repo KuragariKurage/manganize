@@ -1,5 +1,7 @@
 import argparse
+from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
@@ -29,7 +31,8 @@ def main():
     for chunk in graph.stream({"topic": args.source}, config, stream_mode="values"):
         if chunk.get("generated_image"):
             image = Image.open(BytesIO(chunk.get("generated_image")))
-            image.save("generated_image.png")
+            filename = f"generated_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            image.save(Path(__file__).parent / "output" / filename)
             print("image saved.")
             break
         else:
