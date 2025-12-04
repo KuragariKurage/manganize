@@ -30,13 +30,31 @@ def main():
 
     for chunk in graph.stream({"topic": args.source}, config, stream_mode="values"):
         if chunk.get("generated_image"):
+            output_dir = (
+                Path(__file__).parent
+                / "output"
+                / datetime.now().strftime("%Y%m%d_%H%M%S")
+            )
+            output_dir.mkdir(parents=True, exist_ok=True)
+
             image = Image.open(BytesIO(chunk.get("generated_image")))
-            filename = f"generated_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            image.save(Path(__file__).parent / "output" / filename)
-            print("image saved.")
+            image_filename = (
+                f"generated_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            )
+            image.save(output_dir / image_filename)
+
+            research_results_filename = (
+                f"research_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            )
+            Path(output_dir / research_results_filename).write_text(
+                chunk.get("research_results")
+            )
+            scenario_filename = (
+                f"scenario_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            )
+            Path(output_dir / scenario_filename).write_text(chunk.get("scenario"))
+            print("artifacts saved.")
             break
-        else:
-            print(chunk)
 
 
 if __name__ == "__main__":

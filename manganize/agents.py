@@ -13,7 +13,7 @@ from manganize.prompts import (
     MANGANIZE_RESEARCHER_SYSTEM_PROMPT,
     MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT,
 )
-from manganize.tools import generate_manga_image, retrieve_webpage
+from manganize.tools import generate_manga_image, read_document_file, retrieve_webpage
 
 
 class ManganizeInput(TypedDict):
@@ -48,7 +48,7 @@ class ManganizeAgent:
 
         self.researcher = create_agent(
             model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
-            tools=[retrieve_webpage, DuckDuckGoSearchRun()],
+            tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
             system_prompt=SystemMessage(
                 content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT + today_prompt
             ),
@@ -68,6 +68,8 @@ class ManganizeAgent:
         content = (
             last_message.content
             if isinstance(last_message.content, str)
+            else last_message.content[0].get("text")
+            if isinstance(last_message.content, list) and len(last_message.content) > 0
             else str(last_message.content)
         )
         return Command(
