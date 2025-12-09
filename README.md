@@ -1,190 +1,83 @@
 # Manganize
 
-テキストコンテンツをマンガ画像に変換する LangGraph ベースの AI エージェント
+テキストや URL を「まんがタイムきらら」風 4 コマ漫画に変換する LangGraph エージェント。
 
-## 概要
-
-Manganize は、Google Generative AI (Gemini) を使用して、テキストコンテンツを「まんがタイムきらら」風の萌え系日常4コマ漫画に変換するシステムです。LangGraph と LangChain を活用したエージェントアーキテクチャで構築されています。
-
-## 特徴
-
-- 🎨 **高品質な漫画生成**: Gemini 3 Pro Image Preview による美しい漫画スタイル
-- 🤖 **LangGraph エージェント**: 会話履歴を維持する賢いエージェント
-- 📝 **カスタマイズ可能**: プロンプトやスタイルを簡単にカスタマイズ
-- 🔧 **拡張可能**: 独自のツールを簡単に追加できる設計
-- 🐍 **型安全**: mypy による静的型チェック完備
-
-## クイックスタート
-
-### 前提条件
-
-- Python 3.13 以上
-- [uv](https://github.com/astral-sh/uv) がインストールされていること
-- Google Generative AI の API キー
-
-### インストール
+## セットアップ
 
 ```bash
-# リポジトリをクローン
 git clone https://github.com/atsu/manganize.git
 cd manganize
-
-# 依存関係をインストール
 uv sync
+
+# Playwright ブラウザのインストール（Web ページ取得用）
+uv run playwright install chromium
+
+# API キー設定
+export GOOGLE_API_KEY="your-api-key"
 ```
 
-### 設定
-
-Google Generative AI の API キーを環境変数に設定します。
+## 使い方
 
 ```bash
-export GOOGLE_API_KEY="your-api-key-here"
+# URL から漫画を生成
+uv run python main.py "https://example.com/article"
+
+# テキストから漫画を生成
+uv run python main.py "Transformerアーキテクチャについて"
 ```
 
-または、`.env` ファイルを作成：
+出力は `output/YYYYMMDD_HHMMSS/` に保存されます。
 
-```bash
-echo "GOOGLE_API_KEY=your-api-key-here" > .env
+## アーキテクチャ
+
+3 段階のパイプライン構成：
+
+```
+┌──────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Researcher  │ →  │ Scenario Writer │ →  │ Image Generator │
+│ (情報収集)   │    │  (脚本作成)     │    │   (画像生成)    │
+└──────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 実行
-
-```bash
-uv run python main.py
-```
-
-生成された漫画は `generated_image.png` として保存されます。
-
-## 基本的な使い方
-
-```python
-from manganize.chain import ManganizeAgent
-from PIL import Image
-from io import BytesIO
-
-# エージェントを初期化
-agent = ManganizeAgent()
-
-# テキストを漫画に変換
-result = agent(
-    "猫が魚を見つけて喜ぶストーリー",
-    thread_id="story-001",
-)
-
-# 画像を保存
-if result.get("generated_image"):
-    image = Image.open(BytesIO(result["generated_image"]))
-    image.save("my_manga.png")
-```
-
-## ドキュメント
-
-詳細なドキュメントは [Wiki](docs/wiki/) をご覧ください。
-
-### 📚 [Tutorials（チュートリアル）](docs/wiki/tutorials/)
-
-学習指向 - 初めての方向けの手順書
-
-- [はじめての Manganize](docs/wiki/tutorials/getting-started.md)
-- [LangGraph を理解する](docs/wiki/tutorials/understanding-langgraph.md)
-
-### 🛠️ [How-to Guides（ハウツーガイド）](docs/wiki/how-to/)
-
-問題解決指向 - 特定の課題を解決する方法
-
-- [プロンプトをカスタマイズする](docs/wiki/how-to/customize-prompt.md)
-- [カスタムツールを追加する](docs/wiki/how-to/add-custom-tool.md)
-- [画像品質を最適化する](docs/wiki/how-to/optimize-image-quality.md)
-
-### 📖 [Reference（リファレンス）](docs/wiki/reference/)
-
-情報指向 - 技術仕様と API ドキュメント
-
-- [API リファレンス](docs/wiki/reference/api.md)
-- [設定リファレンス](docs/wiki/reference/configuration.md)
-
-### 🧠 [Explanation（解説）](docs/wiki/explanation/)
-
-理解指向 - システムの背景と設計思想
-
-- [アーキテクチャ解説](docs/wiki/explanation/architecture.md)
-- [設計の意思決定](docs/wiki/explanation/design-decisions.md)
-- [プロンプトエンジニアリング解説](docs/wiki/explanation/prompt-engineering.md)
+- **Researcher**: DuckDuckGo 検索、Web ページ取得、ドキュメント読み取りで情報収集
+- **Scenario Writer**: 収集した情報から 4 コマ漫画の脚本を作成
+- **Image Generator**: Gemini 3 Pro Image Preview で漫画画像を生成
 
 ## プロジェクト構成
 
 ```
 manganize/
-├── manganize/          # メインパッケージ
-│   ├── chain.py        # LangGraph エージェント定義
-│   ├── tools.py        # エージェントが使用するツール
-│   └── prompts.py      # プロンプトテンプレート
-├── assets/             # 静的ファイル（キャラクター画像など）
-├── docs/               # ドキュメント
-│   ├── specs/          # 機能仕様（Spec 駆動開発）
-│   └── wiki/           # 技術ドキュメント（Divio システム）
-├── main.py             # エントリーポイント
-├── pyproject.toml      # プロジェクト設定
-└── AGENTS.md           # AI エージェント向けガイド
+├── manganize/
+│   ├── agents.py   # LangGraph エージェント定義
+│   ├── tools.py    # ツール（Web 取得、画像生成など）
+│   └── prompts.py  # プロンプトテンプレート
+├── assets/         # キャラクター参照画像
+├── main.py         # CLI エントリーポイント
+└── pyproject.toml
 ```
 
 ## 開発
 
-### リント・フォーマット
-
 ```bash
-# リント
-uv run ruff check .
-
-# フォーマット
-uv run ruff format .
-
-# 型チェック
-uv run mypy manganize/
-```
-
-### タスクランナー（Task）
-
-```bash
-# リント
-task lint
-
-# フォーマット
-task format
-
-# 型チェック
-task typecheck
-
-# 実行
-task run
+task lint       # リント
+task format     # フォーマット
+task typecheck  # 型チェック
 ```
 
 ## 技術スタック
 
-- **言語**: Python 3.13+
-- **パッケージ管理**: uv
-- **フレームワーク**: LangGraph / LangChain
-- **LLM**: Google Generative AI (Gemini)
-- **開発ツール**: mypy（型チェック）, ruff（リント・フォーマット）
+- Python 3.13+ / uv
+- LangGraph / LangChain
+- Google Generative AI (Gemini)
+- Playwright / MarkItDown
 
-## Spec 駆動開発
+## ドキュメント
 
-このプロジェクトでは、仕様と実装の同期を保つために **Spec 駆動開発** を採用しています。詳細は [AGENTS.md](AGENTS.md) を参照してください。
+- [チュートリアル](docs/wiki/tutorials/) - 使い方を学ぶ
+- [ハウツー](docs/wiki/how-to/) - 特定の課題を解決
+- [リファレンス](docs/wiki/reference/) - API 仕様
+- [解説](docs/wiki/explanation/) - 設計思想
 
 ## ライセンス
 
-[MIT License](LICENSE)
-
-## 貢献
-
-Issue や Pull Request を歓迎します。貢献する前に以下をご確認ください：
-
-- [AGENTS.md](AGENTS.md) - AI エージェント向け開発ガイド
-- [Constitution](.specify/memory/constitution.md) - プロジェクトの根本原則とガバナンスモデル
-
-## 関連リンク
-
-- [LangChain Documentation](https://python.langchain.com/docs/get_started/introduction)
-- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
-- [Google Generative AI Documentation](https://ai.google.dev/gemini-api/docs)
-
+MIT License
