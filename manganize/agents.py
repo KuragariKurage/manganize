@@ -41,7 +41,7 @@ class ManganizeAgent:
     def __init__(self, model: BaseChatModel | None = None):
         today_date = datetime.now().strftime("%Y-%m-%d")
 
-        today_prompt = f"""
+        self.today_prompt = f"""
         # 今日の日付
         今日は{today_date}です。
         """
@@ -49,20 +49,22 @@ class ManganizeAgent:
         self.researcher = create_agent(
             model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
-            system_prompt=SystemMessage(
-                content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT + today_prompt
-            ),
+            system_prompt=SystemMessage(content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT),
         )
         self.scenario_writer = create_agent(
             model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             system_prompt=SystemMessage(
-                content=MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT + today_prompt
+                content=MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT
             ),
         )
 
     def _researcher_node(self, state: ManganizeAgentState) -> Command:
         result = self.researcher.invoke(
-            {"messages": [{"role": "user", "content": state["topic"]}]}
+            {
+                "messages": [
+                    {"role": "user", "content": state["topic"] + self.today_prompt}
+                ]
+            }
         )
         last_message = result["messages"][-1]
         content = (
@@ -81,7 +83,14 @@ class ManganizeAgent:
 
     def _scenario_writer_node(self, state: ManganizeAgentState) -> Command:
         result = self.scenario_writer.invoke(
-            {"messages": [{"role": "user", "content": state["research_results"]}]}
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": state["research_results"] + self.today_prompt,
+                    }
+                ]
+            }
         )
 
         last_message = result["messages"][-1]
