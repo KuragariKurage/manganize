@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TypedDict
+from typing import Literal, Optional, TypedDict
 
 from langchain.agents import create_agent
 from langchain.chat_models import BaseChatModel, init_chat_model
@@ -8,6 +8,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
+from pydantic import BaseModel, Field
 
 from manganize.prompts import (
     MANGANIZE_RESEARCHER_SYSTEM_PROMPT,
@@ -22,6 +23,7 @@ class ManganizeInput(TypedDict):
 
 class ManganizeState(TypedDict):
     research_results: str
+    research_results_relevance: float
     scenario: str
 
 
@@ -37,8 +39,19 @@ class ManganizeAgentState(
     pass
 
 
+class ResearcherAgentOutput(BaseModel):
+    output: str = Field(description="構造化されたネタ帳（ファクトシート）の出力内容")
+    relevance: float = Field(
+        description="ユーザの入力に対する出力内容の関連度（0.0から1.0の間）。1.0に近いほど関連度が高い。"
+    )
+
+
 class ManganizeAgent:
-    def __init__(self, model: BaseChatModel | None = None):
+    def __init__(
+        self,
+        llm: BaseChatModel | None = None,
+        relevance_threshold: float = 0.5,
+    ):
         today_date = datetime.now().strftime("%Y-%m-%d")
 
         self.today_prompt = f"""
@@ -47,16 +60,19 @@ class ManganizeAgent:
         """
 
         self.researcher = create_agent(
-            model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
+            model=llm or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
             system_prompt=SystemMessage(content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT),
+            response_format=ResearcherAgentOutput,
         )
         self.scenario_writer = create_agent(
-            model=model or init_chat_model(model="google_genai:gemini-3-pro-preview"),
+            model=llm or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             system_prompt=SystemMessage(
                 content=MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT
             ),
         )
+
+        self.relevance_threshold = relevance_threshold
 
     def _researcher_node(self, state: ManganizeAgentState) -> Command:
         result = self.researcher.invoke(
@@ -66,19 +82,16 @@ class ManganizeAgent:
                 ]
             }
         )
-        last_message = result["messages"][-1]
-        content = (
-            last_message.content
-            if isinstance(last_message.content, str)
-            else last_message.content[0].get("text")
-            if isinstance(last_message.content, list) and len(last_message.content) > 0
-            else str(last_message.content)
-        )
+        response = result["structured_response"]
+
+        content = response.output
+        relevance = response.relevance
+
         return Command(
             update={
                 "research_results": content,
+                "research_results_relevance": relevance,
             },
-            goto="scenario_writer",
         )
 
     def _scenario_writer_node(self, state: ManganizeAgentState) -> Command:
@@ -110,6 +123,14 @@ class ManganizeAgent:
         result = generate_manga_image(state["scenario"])
         return Command(update={"generated_image": result}, goto=END)
 
+    def _check_relevance(
+        self, state: ManganizeAgentState
+    ) -> Literal["researcher_is_not_relevant", "researcher_is_relevant"]:
+        if state["research_results_relevance"] < self.relevance_threshold:
+            return "researcher_is_not_relevant"
+        else:
+            return "researcher_is_relevant"
+
     def compile_graph(self) -> StateGraph:
         builder = StateGraph(
             state_schema=ManganizeAgentState,
@@ -122,7 +143,14 @@ class ManganizeAgent:
         builder.add_node("image_generator", self._image_generator_node)
 
         builder.add_edge(START, "researcher")
-        builder.add_edge("researcher", "scenario_writer")
+        builder.add_conditional_edges(
+            "researcher",
+            self._check_relevance,
+            path_map={
+                "researcher_is_not_relevant": END,
+                "researcher_is_relevant": "scenario_writer",
+            },
+        )
         builder.add_edge("scenario_writer", "image_generator")
 
         return builder.compile(checkpointer=InMemorySaver())
