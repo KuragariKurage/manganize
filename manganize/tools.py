@@ -8,6 +8,7 @@ from google.genai import types
 from langchain.tools import tool
 from markitdown import MarkItDown
 from playwright.sync_api import sync_playwright
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from manganize.prompts import MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT
 
@@ -22,6 +23,7 @@ def load_kurage_full_image() -> bytes:
     return image_path.read_bytes()
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=15))
 def generate_manga_image(content: str) -> bytes | None:
     """マンガの作画を行うエージェントです。
 
@@ -50,35 +52,38 @@ def generate_manga_image(content: str) -> bytes | None:
         >>>     image.save("manga.png")
     """
 
-    client = genai.Client()
+    try:
+        client = genai.Client()
 
-    response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
-        contents=[
-            types.Part.from_bytes(
-                data=load_kurage_image(),
-                mime_type="image/png",
+        response = client.models.generate_content(
+            model="gemini-3-pro-image-preview",
+            contents=[
+                types.Part.from_bytes(
+                    data=load_kurage_image(),
+                    mime_type="image/png",
+                ),
+                types.Part.from_bytes(
+                    data=load_kurage_full_image(),
+                    mime_type="image/png",
+                ),
+                types.Part.from_text(text=f"脚本:\n{content}"),
+            ],
+            config=types.GenerateContentConfig(
+                system_instruction=MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT,
+                image_config=types.ImageConfig(aspect_ratio="9:16", image_size="2K"),
+                tools=[{"google_search": {}}],
             ),
-            types.Part.from_bytes(
-                data=load_kurage_full_image(),
-                mime_type="image/png",
-            ),
-            types.Part.from_text(text=f"脚本:\n{content}"),
-        ],
-        config=types.GenerateContentConfig(
-            system_instruction=MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT,
-            image_config=types.ImageConfig(aspect_ratio="9:16", image_size="2K"),
-            tools=[{"google_search": {}}],
-        ),
-    )
+        )
 
-    image_parts = [part for part in response.parts if part.inline_data]
+        image_parts = [part for part in response.parts if part.inline_data]
 
-    if image_parts:
-        # inline_dataから直接バイトデータを取得
-        image_data = image_parts[0].inline_data.data
-        if image_data:
-            return image_data
+        if image_parts:
+            # inline_dataから直接バイトデータを取得
+            image_data = image_parts[0].inline_data.data
+            if image_data:
+                return image_data
+    except Exception as e:
+        raise RuntimeError(f"画像生成に失敗しました: {e}") from e
 
     return None
 
