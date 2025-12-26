@@ -12,7 +12,8 @@ from manganize.agents import ManganizeAgent
 
 def local_graph():
     return ManganizeAgent(
-        llm=init_chat_model(model="google_genai:gemini-2.5-flash")
+        researcher_llm=init_chat_model(model="google_genai:gemini-2.5-pro"),
+        scenario_writer_llm=init_chat_model(model="google_genai:gemini-2.5-flash"),
     ).compile_graph()
 
 

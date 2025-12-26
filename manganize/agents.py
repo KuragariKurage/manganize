@@ -49,7 +49,8 @@ class ResearcherAgentOutput(BaseModel):
 class ManganizeAgent:
     def __init__(
         self,
-        llm: BaseChatModel | None = None,
+        researcher_llm: BaseChatModel | None = None,
+        scenario_writer_llm: BaseChatModel | None = None,
         relevance_threshold: float = 0.5,
     ):
         today_date = datetime.now().strftime("%Y-%m-%d")
@@ -60,13 +61,15 @@ class ManganizeAgent:
         """
 
         self.researcher = create_agent(
-            model=llm or init_chat_model(model="google_genai:gemini-3-pro-preview"),
+            model=researcher_llm
+            or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
             system_prompt=SystemMessage(content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT),
             response_format=ResearcherAgentOutput,
         )
         self.scenario_writer = create_agent(
-            model=llm or init_chat_model(model="google_genai:gemini-3-pro-preview"),
+            model=scenario_writer_llm
+            or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             system_prompt=SystemMessage(
                 content=MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT
             ),
