@@ -24,6 +24,7 @@ speech_style:
     - "博士語調（～じゃ、～わい）"
     - "過度にハイテンションなアイドル口調"
 
+# 画像パスはYAMLファイルからの相対パスで指定
 images:
-  portrait: ../assets/kurage.png
-  full_body: ../assets/kurage2.png
+  portrait: assets/kurage.png
+  full_body: assets/kurage2.png
