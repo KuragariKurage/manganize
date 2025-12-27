@@ -1,6 +1,6 @@
 # Manganize
 
-テキストや URL を「まんがタイムきらら」風 4 コマ漫画に変換する LangGraph エージェント。
+ドキュメントファイルやウェブコンテンツの内容を「まんがタイムきらら」風 4 コマ漫画に変換する LangGraph エージェント。
 
 ## セットアップ
 
@@ -8,75 +8,81 @@
 git clone https://github.com/atsu/manganize.git
 cd manganize
 uv sync
-
-# Playwright ブラウザのインストール（Web ページ取得用）
 uv run playwright install chromium
 
-# API キー設定
-export GOOGLE_API_KEY="your-api-key"
+# API キー取得: https://aistudio.google.com/app/apikey
+export GOOGLE_API_KEY="your-api-key-here"
 ```
 
 ## 使い方
 
 ```bash
-# URL から漫画を生成
+# URL / テキスト / ドキュメントから漫画を生成
 uv run python main.py "https://example.com/article"
-
-# テキストから漫画を生成
 uv run python main.py "Transformerアーキテクチャについて"
+uv run python main.py "/path/to/document.pdf"
 ```
 
-出力は `output/YYYYMMDD_HHMMSS/` に保存されます。
+出力: `output/YYYYMMDD_HHMMSS/` に research_results.txt、scenario.txt、generated_image.png
 
 ## アーキテクチャ
 
-3 段階のパイプライン構成：
+3つのエージェントによる LangGraph パイプライン：
 
-```
-┌──────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Researcher  │ →  │ Scenario Writer │ →  │ Image Generator │
-│ (情報収集)   │    │  (脚本作成)     │    │   (画像生成)    │
-└──────────────┘    └─────────────────┘    └─────────────────┘
+```mermaid
+graph TB
+    START([START]) --> Researcher[Researcher Agent<br/>情報収集]
+    Researcher -->|関連度スコア算出| Check{関連度 ≥ 0.5?}
+    Check -->|No| END1([END: 処理中断])
+    Check -->|Yes| Writer[Scenario Writer<br/>脚本作成]
+    Writer --> Generator[Image Generator<br/>画像生成]
+    Generator --> END2([END])
+
+    style Researcher fill:#e1f5ff
+    style Writer fill:#fff4e1
+    style Generator fill:#ffe1f5
 ```
 
-- **Researcher**: DuckDuckGo 検索、Web ページ取得、ドキュメント読み取りで情報収集
-- **Scenario Writer**: 収集した情報から 4 コマ漫画の脚本を作成
-- **Image Generator**: Gemini 3 Pro Image Preview で漫画画像を生成
+### エージェント詳細
+
+| エージェント | 役割 | 使用モデル | ツール |
+|------------|------|-----------|--------|
+| **Researcher** | 情報収集 & ファクトシート作成 | gemini-2.5-pro | DuckDuckGo 検索、Web ページ取得（Playwright）、ドキュメント読取（MarkItDown） |
+| **Scenario Writer** | 4コマ漫画脚本作成 | gemini-2.5-flash | なし |
+| **Image Generator** | 漫画画像生成 | gemini-3-pro-image-preview | Google Search（9:16、2K、リトライ3回） |
+
 
 ## プロジェクト構成
 
 ```
 manganize/
 ├── manganize/
-│   ├── agents.py   # LangGraph エージェント定義
-│   ├── tools.py    # ツール（Web 取得、画像生成など）
-│   └── prompts.py  # プロンプトテンプレート
-├── assets/         # キャラクター参照画像
-├── main.py         # CLI エントリーポイント
-└── pyproject.toml
+│   ├── agents.py       # LangGraph エージェント定義
+│   ├── tools.py        # Web取得・画像生成ツール
+│   └── prompts.py      # システムプロンプト
+├── assets/             # キャラクター参照画像
+├── docs/
+│   ├── specs/          # 機能仕様（EARS記法）
+│   └── wiki/           # 技術ドキュメント（Divio分類）
+├── main.py             # CLI エントリーポイント
+└── AGENTS.md           # エージェント向けガイド
 ```
 
 ## 開発
 
 ```bash
-task lint       # リント
-task format     # フォーマット
-task typecheck  # 型チェック
+task lint       # Ruff リント
+task format     # Ruff フォーマット
+task typecheck  # ty 型チェック
 ```
 
-## 技術スタック
+詳細: [AGENTS.md](AGENTS.md)
 
-- Python 3.13+ / uv
-- LangGraph / LangChain
-- Google Generative AI (Gemini)
-- Playwright / MarkItDown
 
 ## ドキュメント
 
-- [チュートリアル](docs/wiki/tutorials/) - 使い方を学ぶ
-- [ハウツー](docs/wiki/how-to/) - 特定の課題を解決
-- [リファレンス](docs/wiki/reference/) - API 仕様
-- [解説](docs/wiki/explanation/) - 設計思想
+- [docs/specs/](docs/specs/) - 機能仕様（EARS記法）
+- [docs/wiki/](docs/wiki/) - 技術ドキュメント（Tutorials / How-to / Reference / Explanation）
 
 ## ライセンス
 
