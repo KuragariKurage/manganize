@@ -75,11 +75,16 @@ def generate_manga_image(content: str) -> bytes | None:
             ),
         )
 
+        if response.parts is None:
+            return None
+
         image_parts = [part for part in response.parts if part.inline_data]
 
         if image_parts:
             # inline_dataから直接バイトデータを取得
-            image_data = image_parts[0].inline_data.data
+            image_data = (
+                image_parts[0].inline_data.data if image_parts[0].inline_data else None
+            )
             if image_data:
                 return image_data
     except Exception as e:

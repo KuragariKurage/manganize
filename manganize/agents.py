@@ -7,6 +7,7 @@ from langchain.messages import SystemMessage
 from langchain_community.tools import DuckDuckGoSearchRun
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
@@ -134,11 +135,11 @@ class ManganizeAgent:
         else:
             return "researcher_is_relevant"
 
-    def compile_graph(self) -> StateGraph:
+    def compile_graph(self) -> CompiledStateGraph:
         builder = StateGraph(
-            state_schema=ManganizeAgentState,
-            input_schema=ManganizeInput,
-            output_schema=ManganizeOutput,
+            state_schema=ManganizeAgentState,  # type: ignore
+            input_schema=ManganizeInput,  # type: ignore
+            output_schema=ManganizeOutput,  # type: ignore
         )
 
         builder.add_node("researcher", self._researcher_node)
