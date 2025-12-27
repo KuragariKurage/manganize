@@ -2,11 +2,12 @@
 
 version: '3'
 
-vars:
-  GREETING: Hello, World!
-
 tasks:
   default:
+    desc: List all tasks
     cmds:
-      - echo "{{.GREETING}}"
-    silent: true
+      - task --list-all
+  run:
+    desc: Run the application
+    cmds:
+      - uv run python main.py {{.CLI_ARGS}}
