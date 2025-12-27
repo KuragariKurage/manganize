@@ -10,35 +10,23 @@ from markitdown import MarkItDown
 from playwright.sync_api import sync_playwright
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from manganize.prompts import MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT
-
-
-def load_kurage_image() -> bytes:
-    image_path = Path(__file__).parent.parent / "assets" / "kurage.png"
-    return image_path.read_bytes()
-
-
-def load_kurage_full_image() -> bytes:
-    image_path = Path(__file__).parent.parent / "assets" / "kurage2.png"
-    return image_path.read_bytes()
+from manganize.character import BaseCharacter
+from manganize.prompts import get_image_generation_system_prompt
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=15))
-def generate_manga_image(content: str) -> bytes | None:
+def generate_manga_image(content: str, character: BaseCharacter) -> bytes | None:
     """マンガの作画を行うエージェントです。
 
-    指定されたコンテンツに基づいて、Gemini 3 Pro Image Previewモデルを使用して
-    漫画風の画像を生成します。生成された画像はPNG形式のバイト列として
-    状態に保存されます。
+    指定されたコンテンツとキャラクターに基づいて、Gemini 3 Pro Image Previewモデルを使用して
+    漫画風の画像を生成します。生成された画像はPNG形式のバイト列として返されます。
 
     Args:
-        content (str): 画像生成のためのコンテンツ。
-                      漫画化したいテキストやストーリーの説明を含む。
+        content: 画像生成のためのコンテンツ。漫画化したいテキストやストーリーの説明を含む。
+        character: 使用するキャラクター情報
 
     Returns:
-        Command: LangGraphのCommandオブジェクト。
-                - 成功時: update={"generated_image": bytes} で画像データ（PNG形式）を含む
-                - 失敗時: update={"generated_image": None, "message": [ToolMessage]} でエラーメッセージを含む
+        生成された画像のバイトデータ（PNG形式）、失敗時はNone
 
     Note:
         - 画像は9:16のアスペクト比、2Kサイズで生成されます
@@ -46,9 +34,11 @@ def generate_manga_image(content: str) -> bytes | None:
         - 生成された画像にはコミックスのロゴなどの明示的なスタイル表記は含まれません
 
     Example:
-        >>> command = generate_manga_image("可愛い女の子が笑顔で挨拶している")
-        >>> if command.update.get("generated_image"):
-        >>>     image = Image.open(io.BytesIO(command.update["generated_image"]))
+        >>> from manganize.character import KurageChan
+        >>> character = KurageChan()
+        >>> image_data = generate_manga_image("可愛い女の子が笑顔で挨拶している", character)
+        >>> if image_data:
+        >>>     image = Image.open(io.BytesIO(image_data))
         >>>     image.save("manga.png")
     """
 
@@ -59,17 +49,17 @@ def generate_manga_image(content: str) -> bytes | None:
             model="gemini-3-pro-image-preview",
             contents=[
                 types.Part.from_bytes(
-                    data=load_kurage_image(),
+                    data=character.get_portrait_bytes(),
                     mime_type="image/png",
                 ),
                 types.Part.from_bytes(
-                    data=load_kurage_full_image(),
+                    data=character.get_full_body_bytes(),
                     mime_type="image/png",
                 ),
                 types.Part.from_text(text=f"脚本:\n{content}"),
             ],
             config=types.GenerateContentConfig(
-                system_instruction=MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT,
+                system_instruction=get_image_generation_system_prompt(character),
                 image_config=types.ImageConfig(aspect_ratio="9:16", image_size="2K"),
                 tools=[{"google_search": {}}],
             ),

@@ -11,9 +11,10 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
+from manganize.character import BaseCharacter, KurageChan
 from manganize.prompts import (
-    MANGANIZE_RESEARCHER_SYSTEM_PROMPT,
-    MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT,
+    get_researcher_system_prompt,
+    get_scenario_writer_system_prompt,
 )
 from manganize.tools import generate_manga_image, read_document_file, retrieve_webpage
 
@@ -50,10 +51,14 @@ class ResearcherAgentOutput(BaseModel):
 class ManganizeAgent:
     def __init__(
         self,
+        character: BaseCharacter | None = None,
         researcher_llm: BaseChatModel | None = None,
         scenario_writer_llm: BaseChatModel | None = None,
         relevance_threshold: float = 0.5,
     ):
+        # キャラクターの設定（デフォルトはくらげちゃん）
+        self.character = character or KurageChan()
+
         today_date = datetime.now().strftime("%Y-%m-%d")
 
         self.today_prompt = f"""
@@ -65,14 +70,14 @@ class ManganizeAgent:
             model=researcher_llm
             or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
-            system_prompt=SystemMessage(content=MANGANIZE_RESEARCHER_SYSTEM_PROMPT),
+            system_prompt=SystemMessage(content=get_researcher_system_prompt()),
             response_format=ResearcherAgentOutput,
         )
         self.scenario_writer = create_agent(
             model=scenario_writer_llm
             or init_chat_model(model="google_genai:gemini-3-pro-preview"),
             system_prompt=SystemMessage(
-                content=MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT
+                content=get_scenario_writer_system_prompt(self.character)
             ),
         )
 
@@ -124,7 +129,7 @@ class ManganizeAgent:
         )
 
     def _image_generator_node(self, state: ManganizeAgentState) -> Command:
-        result = generate_manga_image(state["scenario"])
+        result = generate_manga_image(state["scenario"], self.character)
         return Command(update={"generated_image": result}, goto=END)
 
     def _check_relevance(
