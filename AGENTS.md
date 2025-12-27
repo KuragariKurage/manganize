@@ -14,7 +14,7 @@
 - **パッケージ管理**: uv
 - **フレームワーク**: LangGraph / LangChain
 - **LLM**: Google Generative AI (Gemini)
-- **開発ツール**: mypy（型チェック）, ruff（リント・フォーマット）
+- **開発ツール**: ty（型チェック）, ruff（リント・フォーマット）
 
 ## Spec 駆動開発
 
@@ -68,7 +68,7 @@ requirements.md では以下の EARS（Easy Approach to Requirements Syntax）�
 ### 型ヒント
 
 - すべての関数に型ヒントを付与すること
-- `mypy` でエラーが出ないことを確認
+- `ty` でエラーが出ないことを確認
 
 ```python
 # Good
