@@ -28,10 +28,19 @@ tasks:
     cmds:
       - uv run ty check .
 
-  dev:
-    desc: Run the web application in development mode with hot reload
+  dev:fastapi:
+    desc: Run the fastapi development server
     cmds:
       - uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
+
+  dev:tailwindcss:
+    desc: Run the tailwindcss development server
+    cmds:
+      - npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --watch
+
+  dev:
+    desc: Run the web application in development mode with hot reload
+    deps: [dev:fastapi, dev:tailwindcss]
 
   web:
     desc: Alias for dev task
