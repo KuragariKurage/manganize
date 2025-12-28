@@ -6,12 +6,16 @@ from pathlib import Path
 import yaml
 
 from web.models.character import Character
-from web.models.database import async_session_maker, engine
+from web.models.database import create_engine, create_session_maker
 
 
-async def seed_default_character() -> None:
-    """Load and insert the default 'kurage' character from YAML"""
+async def seed_default_character(session) -> None:
+    """
+    Load and insert the default 'kurage' character from YAML.
 
+    Args:
+        session: SQLAlchemy async session
+    """
     # Load kurage.yaml
     kurage_file = Path("characters/kurage/kurage.yaml")
 
@@ -44,38 +48,42 @@ async def seed_default_character() -> None:
                 Path("characters/kurage") / images_data["full_body"]
             )
 
-    async with async_session_maker() as session:
-        # Check if character already exists
-        existing = await session.get(Character, "kurage")
+    # Check if character already exists
+    existing = await session.get(Character, "kurage")
 
-        if existing:
-            print("Character 'kurage' already exists. Skipping.")
-            return
+    if existing:
+        print("Character 'kurage' already exists. Skipping.")
+        return
 
-        # Create new character
-        character = Character(
-            name="kurage",
-            display_name=display_name,
-            nickname=nickname,
-            attributes=attributes,
-            personality=personality,
-            speech_style=speech_style,
-            reference_images=reference_images,
-            is_default=True,
-        )
+    # Create new character
+    character = Character(
+        name="kurage",
+        display_name=display_name,
+        nickname=nickname,
+        attributes=attributes,
+        personality=personality,
+        speech_style=speech_style,
+        reference_images=reference_images,
+        is_default=True,
+    )
 
-        session.add(character)
-        await session.commit()
+    session.add(character)
+    await session.commit()
 
-        print(
-            f"✅ Default character '{character.name}' ({character.display_name}) seeded successfully."
-        )
+    print(
+        f"✅ Default character '{character.name}' ({character.display_name}) seeded successfully."
+    )
 
 
 async def main() -> None:
     """Main seed function"""
+    # Create engine and session maker for standalone script
+    engine = create_engine()
+    session_maker = create_session_maker(engine)
+
     try:
-        await seed_default_character()
+        async with session_maker() as session:
+            await seed_default_character(session)
     finally:
         # Properly dispose of the async engine
         await engine.dispose()

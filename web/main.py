@@ -13,7 +13,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from web.api import character, generation, history
 from web.config import settings
-from web.models.database import init_db
+from web.models.database import create_engine, create_session_maker, init_db
 from web.templates import templates
 
 # Rate limiter configuration
@@ -30,8 +30,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
 
     Initializes database on startup and cleans up on shutdown.
     """
-    await init_db()
+    # Startup: Create engine and store in app.state
+    engine = create_engine()
+    app.state.engine = engine
+    app.state.session_maker = create_session_maker(engine)
+
+    await init_db(engine)
     yield
+    await engine.dispose()
 
 
 # Create FastAPI application
