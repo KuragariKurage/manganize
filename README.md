@@ -68,12 +68,24 @@ manganize/
 └── AGENTS.md           # エージェント向けガイド
 ```
 
+## Web アプリケーション
+
+```bash
+# 開発サーバー起動（Hot Reload 有効）
+task dev
+# または
+uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
+
+# ブラウザで http://127.0.0.1:8000 にアクセス
+```
+
 ## 開発
 
 ```bash
 task lint       # Ruff リント
 task format     # Ruff フォーマット
 task typecheck  # ty 型チェック
+task dev        # Web 開発サーバー起動
 ```
 
 詳細: [AGENTS.md](AGENTS.md)

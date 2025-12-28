@@ -7,7 +7,33 @@ tasks:
     desc: List all tasks
     cmds:
       - task --list-all
+
   run:
-    desc: Run the application
+    desc: Run the application (CLI agent)
     cmds:
       - uv run python main.py {{.CLI_ARGS}}
+
+  lint:
+    desc: Run the linter
+    cmds:
+      - uv run ruff check .
+
+  format:
+    desc: Run the formatter
+    cmds:
+      - uv run ruff check --fix .
+
+  typecheck:
+    desc: Run the type checker
+    cmds:
+      - uv run ty check .
+
+  dev:
+    desc: Run the web application in development mode with hot reload
+    cmds:
+      - uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
+
+  web:
+    desc: Alias for dev task
+    cmds:
+      - task: dev
