@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}キャラクター管理 - Manganize{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">
+        キャラクター管理
+    </h1>
+    <p class="text-center text-gray-600 mb-8">
+        マンガ生成に使用するキャラクターを管理します
+    </p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Character list -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">
+                キャラクター一覧
+                <span class="spinner-sm htmx-indicator ml-2" hx-indicator></span>
+            </h2>
+
+            <div id="character-list"
+                 hx-get="/api/characters"
+                 hx-trigger="load, refresh-characters from:body"
+                 hx-swap="innerHTML"
+                 hx-indicator=".htmx-indicator">
+                <!-- Skeleton loading -->
+                <div class="space-y-3">
+                    <div class="skeleton h-16 w-full"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Character form -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4" id="form-title">新規キャラクター作成</h2>
+
+            <div id="character-form-container">
+                {% include "partials/character_form.html" %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character list template (rendered by HTMX)
+document.body.addEventListener('htmx:afterSettle', function(event) {
+    if (event.detail.target.id === 'character-list') {
+        const response = event.detail.xhr.responseText;
+        try {
+            const characters = JSON.parse(response);
+            const listHtml = characters.map(char => `
+                <div class="character-item">
+                    <div>
+                        <h3 class="character-item-title">${char.display_name}</h3>
+                        ${char.nickname ? `<p class="character-item-subtitle">${char.nickname}</p>` : ''}
+                        ${char.is_default ? '<span class="badge badge-default">デフォルト</span>' : ''}
+                    </div>
+                    ${char.is_default ? '' : `
+                    <div class="character-item-actions">
+                        <button onclick="editCharacter('${char.name}')" class="link-btn link-btn-primary">
+                            編集
+                        </button>
+                        <button onclick="deleteCharacter('${char.name}')" class="link-btn link-btn-danger">
+                            削除
+                        </button>
+                    </div>
+                    `}
+                </div>
+            `).join('');
+
+            event.detail.target.innerHTML = listHtml || '<p class="text-gray-500">キャラクターがありません</p>';
+        } catch (e) {
+            console.error('Failed to parse characters:', e);
+        }
+    }
+});
+
+// Edit character
+async function editCharacter(name) {
+    try {
+        const response = await fetch(`/api/characters/${name}`);
+        const character = await response.json();
+
+        // Update form title
+        document.getElementById('form-title').textContent = 'キャラクター編集';
+
+        // Populate form
+        document.getElementById('name').value = character.name;
+        document.getElementById('name').disabled = true;
+        document.getElementById('display_name').value = character.display_name;
+        document.getElementById('nickname').value = character.nickname || '';
+        document.getElementById('attributes').value = character.attributes.join(', ');
+        document.getElementById('personality').value = character.personality;
+        document.getElementById('speech_tone').value = character.speech_style.tone;
+        document.getElementById('speech_patterns').value = character.speech_style.patterns.join(', ');
+        document.getElementById('speech_examples').value = character.speech_style.examples.join('\n');
+        document.getElementById('speech_forbidden').value = character.speech_style.forbidden.join('\n');
+
+        // Change form method to PUT
+        const form = document.getElementById('character-form');
+        form.dataset.method = 'PUT';
+        form.dataset.action = `/api/characters/${name}`;
+    } catch (error) {
+        showToast('キャラクターの読み込みに失敗しました', 'error');
+        console.error(error);
+    }
+}
+
+// Delete character
+function deleteCharacter(name) {
+    // Open confirmation dialog
+    window.dispatchEvent(new CustomEvent('confirm-dialog', {
+        detail: {
+            title: 'キャラクター削除の確認',
+            message: `キャラクター「${name}」を削除しますか？この操作は取り消せません。`,
+            onConfirm: async () => {
+                try {
+                    const response = await fetch(`/api/characters/${name}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        // Refresh character list
+                        htmx.trigger('#character-list', 'refresh-characters');
+                        showToast('削除しました', 'success');
+                    } else {
+                        showToast('削除に失敗しました', 'error');
+                    }
+                } catch (error) {
+                    showToast('削除に失敗しました', 'error');
+                    console.error(error);
+                }
+            }
+        }
+    }));
+}
+
+// Reset form
+function resetForm() {
+    document.getElementById('form-title').textContent = '新規キャラクター作成';
+    document.getElementById('name').disabled = false;
+    document.getElementById('character-form').reset();
+
+    const form = document.getElementById('character-form');
+    form.dataset.method = 'POST';
+    form.dataset.action = '/api/characters';
+}
+</script>
+{% endblock %}

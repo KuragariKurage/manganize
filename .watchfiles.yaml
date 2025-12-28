@@ -1,0 +1,16 @@
+# Watchfiles configuration for faster reload
+# Only watch relevant directories
+watch:
+  - web
+  - manganize
+
+ignore:
+  - __pycache__
+  - "*.pyc"
+  - .pytest_cache
+  - .ruff_cache
+  - .git
+  - docs
+  - tests
+  - "*.db"
+  - "*.sqlite"

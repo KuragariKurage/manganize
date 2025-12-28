@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: Manganize History API
+  description: 生成履歴の閲覧と管理のAPI
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/history:
+    get:
+      summary: 生成履歴一覧を取得（HTMLパーシャル）
+      operationId: listHistory
+      tags:
+        - History
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: ページ番号（無限スクロール用）
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: 1ページあたりの件数
+      responses:
+        '200':
+          description: 履歴一覧のHTMLフラグメント
+          content:
+            text/html:
+              schema:
+                type: string
+                example: |
+                  <div class="history-item" id="history-{id}">
+                    <img src="/api/images/{id}/thumbnail" alt="thumbnail">
+                    <div class="info">
+                      <h4>{generated_title}</h4>
+                      <p>{created_at}</p>
+                    </div>
+                  </div>
+                  <!-- 次のページがあればボタンを表示 -->
+                  <button hx-get="/api/history?page=2"
+                          hx-target="#history-list"
+                          hx-swap="beforeend"
+                          hx-trigger="revealed">
+                    もっと見る
+                  </button>
+        '400':
+          description: バリデーションエラー
+
+  /api/history/{id}:
+    get:
+      summary: 履歴詳細を取得
+      operationId: getHistory
+      tags:
+        - History
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 生成リクエストID
+      responses:
+        '200':
+          description: 履歴詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryDetail'
+        '404':
+          description: 履歴が見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: 履歴を削除
+      operationId: deleteHistory
+      tags:
+        - History
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 削除成功（空のHTMLを返す）
+          content:
+            text/html:
+              schema:
+                type: string
+                example: ""
+        '404':
+          description: 履歴が見つからない
+
+components:
+  schemas:
+    HistoryDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 生成リクエストID
+        character_name:
+          type: string
+          description: 使用したキャラクター名
+        input_topic:
+          type: string
+          description: 入力トピック
+        generated_title:
+          type: string
+          description: 生成されたタイトル
+        status:
+          type: string
+          enum: [pending, researching, writing, generating, completed, error]
+          description: 生成状態
+        created_at:
+          type: string
+          format: date-time
+          description: 生成リクエスト作成日時
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 生成完了日時
+        image_url:
+          type: string
+          description: 画像URL（/api/images/{id}）
+        error_message:
+          type: string
+          nullable: true
+          description: エラーメッセージ（status='error'の場合）
+      required:
+        - id
+        - character_name
+        - input_topic
+        - generated_title
+        - status
+        - created_at
+        - image_url
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: エラーメッセージ
+      required:
+        - detail

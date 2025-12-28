@@ -1,0 +1,278 @@
+openapi: 3.1.0
+info:
+  title: Manganize Character API
+  description: キャラクターカスタマイズと管理のAPI
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/characters:
+    get:
+      summary: キャラクター一覧を取得
+      operationId: listCharacters
+      tags:
+        - Character
+      responses:
+        '200':
+          description: キャラクター一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterResponse'
+
+    post:
+      summary: 新規キャラクターを作成
+      operationId: createCharacter
+      tags:
+        - Character
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_]+$'
+                  minLength: 1
+                  maxLength: 100
+                  description: キャラクター名（英数字とアンダースコアのみ）
+                description:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                  description: キャラクターの説明
+                appearance:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                  description: 外見の特徴
+                personality:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                  description: 性格・口調
+                reference_image:
+                  type: string
+                  format: binary
+                  description: 参照画像（PNG/JPEG、任意）
+              required:
+                - name
+                - description
+                - appearance
+                - personality
+      responses:
+        '201':
+          description: キャラクター作成成功（HTMLパーシャル）
+          content:
+            text/html:
+              schema:
+                type: string
+                example: |
+                  <div class="character-item" id="character-{name}">
+                    <h3>{name}</h3>
+                    <p>{description}</p>
+                  </div>
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: キャラクター名が既に存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/characters/{name}:
+    get:
+      summary: キャラクター詳細を取得
+      operationId: getCharacter
+      tags:
+        - Character
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: キャラクター名
+      responses:
+        '200':
+          description: キャラクター詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterResponse'
+        '404':
+          description: キャラクターが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: キャラクターを更新
+      operationId: updateCharacter
+      tags:
+        - Character
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                appearance:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                personality:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                reference_image:
+                  type: string
+                  format: binary
+              required:
+                - description
+                - appearance
+                - personality
+      responses:
+        '200':
+          description: 更新成功（HTMLパーシャル）
+          content:
+            text/html:
+              schema:
+                type: string
+                example: |
+                  <div class="character-item" id="character-{name}">
+                    <h3>{name}</h3>
+                    <p>{description}</p>
+                  </div>
+        '400':
+          description: バリデーションエラー
+        '403':
+          description: デフォルトキャラクターは更新不可
+        '404':
+          description: キャラクターが見つからない
+
+    delete:
+      summary: キャラクターを削除
+      operationId: deleteCharacter
+      tags:
+        - Character
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 削除成功
+        '403':
+          description: デフォルトキャラクターは削除不可
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: キャラクターが見つからない
+        '409':
+          description: 関連する生成履歴が存在するため削除不可
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/characters/{name}/image:
+    get:
+      summary: キャラクター参照画像を取得
+      operationId: getCharacterImage
+      tags:
+        - Character
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 参照画像
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 画像が見つからない
+
+components:
+  schemas:
+    CharacterResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          description: キャラクター名
+        description:
+          type: string
+          description: キャラクターの説明
+        appearance:
+          type: string
+          description: 外見の特徴
+        personality:
+          type: string
+          description: 性格・口調
+        is_default:
+          type: boolean
+          description: デフォルトキャラクターフラグ
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - name
+        - description
+        - appearance
+        - personality
+        - is_default
+        - created_at
+        - updated_at
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: エラーメッセージ
+      required:
+        - detail

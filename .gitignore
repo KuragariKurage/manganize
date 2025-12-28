@@ -288,3 +288,10 @@ $RECYCLE.BIN/
 
 generated_image.png
 output/
+
+# Web application specific
+node_modules/
+web/static/css/output.css
+*.db
+*.db-journal
+alembic/__pycache__/

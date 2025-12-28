@@ -2,28 +2,38 @@
 
 <!--
 Sync Impact Report:
-Version: 1.0.0 (Initial Constitution)
+Version: 1.0.0 → 1.1.0 (MINOR bump - new principle added)
 Ratification Date: 2025-11-29
+Last Amended: 2025-12-27
+
 Changes:
-  - Initial constitution creation for Manganize project
-  - Established 6 core principles: Spec駆動開発, 型安全性, EARS記法準拠, Divioドキュメンテーション, コード品質, LangGraphベース設計
-  - Defined governance model with amendment procedures and compliance review
-  - Specified technical stack constraints and technology selection principles
+  - Added Principle VII: Webアプリケーションスタック (HTMX/FastAPI/TailwindCSS/Jinja2)
+  - Updated Technical Stack Constraints to include web application technologies
+  - Updated Recommended Technologies section
+
+Modified Principles:
+  - None renamed, all existing 6 principles preserved
+
+Added Sections:
+  - Principle VII: Webアプリケーションスタック
+  - Web Application Technologies in Technical Stack Constraints
+
+Removed Sections:
+  - None
 
 Template Consistency:
-  ✅ plan-template.md - Updated Constitution Check section with concrete compliance checklist based on 6 principles
-  ✅ spec-template.md - Added EARS syntax guidance to Requirements section
-  ✅ tasks-template.md - Added code quality verification tasks (ruff, mypy, type hints) to Polish phase
-  ✅ agent-file-template.md - Reviewed, no updates needed (constitution-agnostic template)
-  ✅ checklist-template.md - Reviewed, no updates needed (constitution-agnostic template)
+  ⚠️ plan-template.md - Requires update to add Web Application stack check
+  ⚠️ spec-template.md - No update needed (generic template)
+  ⚠️ tasks-template.md - No update needed (generic template)
 
 Documentation Updates:
-  ✅ AGENTS.md - Added explicit reference to Constitution at the top
-  ✅ README.md - Added Constitution reference in contribution section
+  ⚠️ docs/specs/web-app/design.md - Requires update: change Next.js → htmx + Jinja2
+  ⚠️ AGENTS.md - May require update to add web stack information
 
 Follow-up Actions:
-  - None - Initial constitution fully defined and all dependent artifacts updated
-  - Future: As docs/specs/ features are created, ensure they follow the Spec-Driven Development principle
+  - Update docs/specs/web-app/design.md to reflect htmx + Jinja2 architecture
+  - Update plan-template.md Constitution Check to include Principle VII
+  - Update AGENTS.md technical stack section
 -->
 
 ## Core Principles
@@ -45,7 +55,7 @@ Follow-up Actions:
 **原則**: すべての関数に型ヒントを付与しなければならない（MUST）。
 
 - すべての関数シグネチャに引数と戻り値の型ヒントを付与すること
-- `mypy` でエラーが出ないことを確認してからコミットすること
+- `ty` でエラーが出ないことを確認してからコミットすること
 - 型ヒントのない関数は実装として不完全とみなす
 
 **根拠**:
@@ -83,11 +93,11 @@ Divio システムは、ドキュメントの目的を明確化し、ユーザ�
 
 ### V. コード品質（Code Quality）
 
-**原則**: コードは `ruff` と `mypy` による品質チェックに合格しなければならない（MUST）。
+**原則**: コードは `ruff` と `ty` による品質チェックに合格しなければならない（MUST）。
 
 - `ruff check .` でリント警告がないこと
 - `ruff format .` でフォーマットが統一されていること
-- `mypy manganize/` で型チェックエラーがないこと
+- `ty check` で型チェックエラーがないこと
 - コミット前に必ずこれらのチェックを実行すること
 
 **根拠**:
@@ -105,6 +115,26 @@ Divio システムは、ドキュメントの目的を明確化し、ユーザ�
 **根拠**:
 LangGraph は複雑なエージェントフローを管理するための強力なフレームワークであり、状態管理の明確性と拡張性を提供する。パターンに従うことで、チーム全体が一貫したアーキテクチャを維持し、将来的な機能追加が容易になる。
 
+### VII. Webアプリケーションスタック（Web Application Stack - HTMX Pattern）
+
+**原則**: Webアプリケーションは HTMX + FastAPI + TailwindCSS + Jinja2 スタックで構築しなければならない（MUST）。
+
+技術選定の理由:
+- **HTMX**: サーバーサイドレンダリングを維持しながら動的なUI更新を実現。JavaScript の複雑性を最小化
+- **FastAPI**: Python ベースで型安全なAPI開発が可能。既存の manganize コアとシームレスに統合
+- **TailwindCSS**: ユーティリティファーストのCSSで迅速なスタイリング
+- **Jinja2**: Python テンプレートエンジンとして FastAPI と自然に統合
+
+アーキテクチャガイドライン:
+- フロントエンドは Jinja2 テンプレートでサーバーサイドレンダリングすること
+- 動的な UI 更新は HTMX 属性（`hx-get`, `hx-post`, `hx-swap` など）を使用すること
+- リアルタイム更新が必要な場合は SSE（Server-Sent Events）と `hx-ext="sse"` を使用すること
+- スタイリングは TailwindCSS のユーティリティクラスを使用し、カスタム CSS は最小限にすること
+- JavaScript は HTMX で実現できない場合にのみ使用すること（Alpine.js は許容）
+
+**根拠**:
+HTMX パターンは、SPA（Single Page Application）の複雑性を回避しつつ、モダンな UX を実現する。Python エコシステムに統一することで、フロントエンドとバックエンドの境界を曖昧にし、開発者の認知負荷を軽減する。また、既存の manganize コア（LangGraph）との統合が容易になる。
+
 ## 開発ワークフロー
 
 ### 基本フロー（Spec → 実装）
@@ -113,7 +143,7 @@ LangGraph は複雑なエージェントフローを管理するための強力�
 2. **設計更新**: `design.md` で実装方針を設計
 3. **タスク生成**: `tasks.md` でタスクを生成または更新
 4. **実装**: タスクに沿ってコードを実装
-5. **品質チェック**: `ruff` と `mypy` でコード品質を確認
+5. **品質チェック**: `ruff` と `ty` でコード品質を確認
 6. **Spec更新**: 実装により仕様に変更があれば Spec を更新
 
 ### 逆フロー（実装 → Spec）
@@ -142,19 +172,29 @@ Angular Convention に従うこと：
 
 ## 技術スタック制約
 
-### 必須技術
+### 必須技術（コアエージェント）
 
 - **言語**: Python 3.13 以上
 - **パッケージ管理**: uv
 - **フレームワーク**: LangGraph / LangChain
 - **LLM**: Google Generative AI (Gemini)
-- **開発ツール**: mypy（型チェック）、ruff（リント・フォーマット）
+- **開発ツール**: ty（型チェック）、ruff（リント・フォーマット）
+
+### 必須技術（Webアプリケーション）
+
+- **Web フレームワーク**: FastAPI
+- **テンプレートエンジン**: Jinja2
+- **フロントエンド動的化**: HTMX
+- **スタイリング**: TailwindCSS
+- **リアルタイム通信**: SSE（Server-Sent Events）
 
 ### 推奨される追加技術
 
 - **タスクランナー**: Task（Taskfile.yml）
 - **画像処理**: Pillow
 - **環境変数管理**: python-dotenv
+- **データベース**: SQLite（開発）/ PostgreSQL（本番）
+- **軽量 JavaScript**: Alpine.js（HTMX で不十分な場合のみ）
 
 ### 技術選定の原則
 
@@ -190,9 +230,10 @@ Angular Convention に従うこと：
 
 - [ ] Spec ファイルが更新されているか（必要な場合）
 - [ ] 型ヒントが付与されているか
-- [ ] `ruff` と `mypy` のチェックに合格しているか
+- [ ] `ruff` と `ty` のチェックに合格しているか
 - [ ] ドキュメントが適切な象限に配置されているか
 - [ ] コミットメッセージが規約に従っているか
+- [ ] Web アプリの場合、HTMX パターンに従っているか
 
 ### エージェント向けガイダンス
 
@@ -200,6 +241,6 @@ AI コーディングエージェントは `AGENTS.md` を参照し、この憲�
 
 ### 複雑性の正当化
 
-原則に違反する場合（例: 型ヒントの省略、EARS記法からの逸脱）は、その理由を明確に文書化し、代替案が拒否された理由を説明すること。正当化なしの違反は許容されない。
+原則に違反する場合（例: 型ヒントの省略、EARS記法からの逸脱、HTMXパターンからの逸脱）は、その理由を明確に文書化し、代替案が拒否された理由を説明すること。正当化なしの違反は許容されない。
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-29 | **Last Amended**: 2025-11-29
+**Version**: 1.1.0 | **Ratified**: 2025-11-29 | **Last Amended**: 2025-12-27

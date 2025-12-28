@@ -10,11 +10,19 @@
 
 ### 技術スタック
 
+#### コアエージェント
 - **言語**: Python 3.13+
 - **パッケージ管理**: uv
 - **フレームワーク**: LangGraph / LangChain
 - **LLM**: Google Generative AI (Gemini)
 - **開発ツール**: ty（型チェック）, ruff（リント・フォーマット）
+
+#### Webアプリケーション
+- **Web フレームワーク**: FastAPI
+- **テンプレートエンジン**: Jinja2
+- **フロントエンド動的化**: HTMX
+- **スタイリング**: TailwindCSS
+- **リアルタイム通信**: SSE（Server-Sent Events）
 
 ## Spec 駆動開発
 
@@ -62,6 +70,37 @@ requirements.md では以下の EARS（Easy Approach to Requirements Syntax）�
 1. 実装を行う
 2. 「この変更を Spec に反映して」と依頼
 3. 適切な Spec ファイルを更新
+
+## フロントエンド開発
+
+### TailwindCSS のワークフロー
+
+**重要**: このプロジェクトは TailwindCSS 4.x を使用しています（`@import "tailwindcss";` 構文）。
+
+1. **初回セットアップ**: `npm install`
+2. **スタイルの編集**: `web/static/css/input.css` でカスタムスタイルを定義
+3. **watch モード起動**: `npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --watch`
+4. **ビルド確認**: `web/static/css/output.css` が自動更新されることを確認
+5. **本番ビルド**: `npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --minify`
+
+### HTMX の使い方
+
+- **動的更新**: `hx-get`, `hx-post` でサーバーサイドレンダリングされた HTML を部分更新
+- **プログレスバー**: `hx-indicator` でローディングインジケーターを表示
+- **無限スクロール**: `hx-trigger="revealed"` でスクロール時の自動読み込み
+- **フォーム送信**: `hx-post` でフォームを非同期送信
+
+### Alpine.js の使い方
+
+- **モーダル**: `x-data`, `x-show` でモーダルダイアログを実装
+- **状態管理**: `x-data` で軽量な状態管理
+- **イベントハンドリング**: `@click`, `@submit` でクライアントサイドのインタラクション
+
+### SSE（Server-Sent Events）
+
+- **進捗通知**: `EventSource` API でリアルタイム進捗更新
+- **再接続**: 自動再接続ロジックとエラーハンドリング
+- **実装場所**: `web/templates/partials/progress.html`
 
 ## コーディング規約
 
