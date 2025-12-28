@@ -1,6 +1,7 @@
 """API endpoints for manga generation"""
 
 import io
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
@@ -218,11 +219,14 @@ async def download_image(
         generation.created_at,
     )
 
+    encoded_filename = quote(filename.encode("utf-8"))
+    ascii_fallback = "manganize_manga.png"  # Simple ASCII fallback
+
     return Response(
         content=generation.image_data,
         media_type="image/png",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Disposition": f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded_filename}",
             "Cache-Control": "public, max-age=31536000",
         },
     )
