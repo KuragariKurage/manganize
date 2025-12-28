@@ -103,12 +103,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T041 [P] [US2] Implement GET /api/images/{id}/download endpoint with Content-Disposition header in web/api/generation.py
-- [ ] T042 [P] [US2] Implement GET /api/images/{id}/thumbnail endpoint with Pillow thumbnail generation (200x200) in web/api/generation.py
-- [ ] T043 [US2] Add download button with hx-get to /api/images/{id}/download in web/templates/partials/result.html
-- [ ] T044 [US2] Add image click handler to display fullsize modal in web/templates/partials/result.html
-- [ ] T045 [US2] Implement filename generation logic: manganize_{datetime}_{generated_title}.png in web/api/generation.py
-- [ ] T046 [US2] Add Alpine.js modal component for fullsize image display in web/templates/index.html
+- [X] T041 [P] [US2] Implement GET /api/images/{id}/download endpoint with Content-Disposition header in web/api/generation.py
+- [X] T042 [P] [US2] Implement GET /api/images/{id}/thumbnail endpoint with Pillow thumbnail generation (200x200) in web/api/generation.py
+- [X] T043 [US2] Add download button with hx-get to /api/images/{id}/download in web/templates/partials/result.html (already implemented in Phase 3)
+- [X] T044 [US2] Add image click handler to display fullsize modal in web/templates/partials/result.html (already implemented in Phase 3)
+- [X] T045 [US2] Implement filename generation logic: manganize_{datetime}_{generated_title}.png in web/utils/filename.py
+- [X] T045.1 [US2] Refactor: Move filename generation helper to web/utils/filename.py for better code organization
+- [X] T046 [US2] Add Alpine.js modal component for fullsize image display in web/templates/index.html
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -295,12 +296,19 @@ With multiple developers:
 
 ## Implementation Status
 
-**Phase 3 (MVP) 完了日**: 2025-12-28
+**最終更新日**: 2025-12-28
 
-**完了タスク数**: 44/92 (47.8%)
+**完了タスク数**: 50/92 (54.3%)
 - Phase 1: Setup (8/8) ✅
 - Phase 2: Foundational (21/21) ✅ (Repository Pattern含む)
-- Phase 3: User Story 1 (15/15) ✅
+- Phase 3: User Story 1 (15/15) ✅ - MVP 完了
+- Phase 4: User Story 2 (6/6) ✅ - 画像表示・ダウンロード完了
+
+**Phase 4 実装内容**:
+- T041: ダウンロードエンドポイント（`/api/images/{id}/download`）
+- T042: サムネイルエンドポイント（`/api/images/{id}/thumbnail`）- Pillow で 200x200 サムネイル生成
+- T045: ファイル名生成ロジック（`manganize_{datetime}_{title}.png`）- 特殊文字サニタイズ
+- T046: Alpine.js モーダル完成 - カスタムイベント、トランジション、閉じるボタン追加
 
 **実装時の追加タスク**:
 - T010.1〜T010.4: Repository Pattern + Unit of Work + templates.py 分離
@@ -312,13 +320,12 @@ With multiple developers:
 - SSE: vanilla JavaScript EventSource API を使用（HTMX SSE 拡張ではなく）
 - カスタム TailwindCSS コンポーネントクラスの定義
 
-**フロントエンド先行実装**:
+**フロントエンド先行実装（Phase 3）**:
 - ナビゲーションバー（T074 を先行実装）
-- Alpine.js モーダル骨組み（T046 部分完了）
-- ダウンロードボタン UI（T041 バックエンド未実装）
+- Alpine.js モーダル骨組み（Phase 4 で完成）
+- ダウンロードボタン UI（Phase 4 でバックエンド実装）
 
 **次フェーズ優先事項**:
-1. Phase 4 (User Story 2): 画像表示・ダウンロード - T041, T046 を最優先
-2. Phase 5 (User Story 3): キャラクターカスタマイズ - Repository Pattern を活用
-3. Phase 6 (User Story 4): 生成履歴の管理
-4. Phase 7: Polish & Cross-Cutting Concerns
+1. Phase 5 (User Story 3): キャラクターカスタマイズ - Repository Pattern を活用
+2. Phase 6 (User Story 4): 生成履歴の管理 - サムネイル表示
+3. Phase 7: Polish & Cross-Cutting Concerns

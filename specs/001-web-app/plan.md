@@ -89,6 +89,9 @@ web/                     # Web application root
 │   ├── generator.py     # Wraps ManganizeAgent, handles SSE progress
 │   ├── character.py     # Character CRUD logic
 │   └── history.py       # History retrieval and management
+├── utils/               # Utility functions
+│   ├── __init__.py
+│   └── filename.py      # Filename generation utilities
 ├── templates/           # Jinja2 templates
 │   ├── base.html        # Base layout with TailwindCSS
 │   ├── index.html       # Main page (topic input + generation)
@@ -179,20 +182,45 @@ uv.lock                  # Updated lock file
 - plan.md: Project Structure と Architecture Patterns セクションを更新
 - spec.md: 変更なし（実装は仕様に準拠）
 
-**フロントエンドの先行実装**:
-以下の UI 要素が Phase 3 (MVP) で実装済みですが、対応するバックエンド API や機能は後続フェーズで実装予定：
+**フロントエンドの先行実装** (Phase 3):
+以下の UI 要素が Phase 3 (MVP) で実装済みで、Phase 4 でバックエンドや機能が完成：
 
 - **ナビゲーション**: `web/templates/base.html` L22-33 にナビゲーションバーを実装済み（T074 を先行実装）
   - 履歴ページ、キャラクターページへのリンクは Phase 5, 6 で機能化予定
 - **Alpine.js 導入**: `web/templates/base.html` L16 で Alpine.js を CDN から読み込み済み
-  - Phase 4 のモーダル機能（T046）で本格利用予定
-- **モーダル骨組み**: `web/templates/index.html` L70-84 に Alpine.js モーダルを追加済み（T046 部分完了）
-- **ダウンロードリンク**: `web/templates/partials/result.html` L23-27 にダウンロードボタンを追加済み（T041 対応のバックエンドは未実装）
+  - Phase 4 のモーダル機能（T046）で本格利用 ✅
+- **モーダル骨組み**: `web/templates/index.html` L70-84 に Alpine.js モーダルを追加済み → Phase 4 で完成 ✅
+- **ダウンロードリンク**: `web/templates/partials/result.html` L23-27 にダウンロードボタンを追加済み → Phase 4 で完成 ✅
 - **カスタム TailwindCSS コンポーネント**: `web/static/css/input.css` に再利用可能なコンポーネントクラスを定義
   - `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.card`, `.input-field`, `.textarea-field`
   - HTMX インジケーター用のユーティリティクラス（L90-100）
 
+**Phase 4 実装詳細** (2025-12-28 完了):
+
+1. **ダウンロード機能**:
+   - `GET /api/images/{id}/download` エンドポイント追加
+   - ファイル名生成: `manganize_{YYYYMMDD_HHMMSS}_{sanitized_title}.png`
+   - 特殊文字サニタイズ: 非英数字を `_` に置換、最大50文字にトリミング
+   - `Content-Disposition: attachment` ヘッダーでダウンロードを強制
+   - **リファクタリング**: ファイル名生成ロジックを `web/utils/filename.py` に分離（ルーターの可読性向上）
+
+2. **サムネイル生成**:
+   - `GET /api/images/{id}/thumbnail` エンドポイント追加
+   - Pillow で 200x200 サムネイルを生成（アスペクト比維持、LANCZOS リサンプリング）
+   - Phase 6 の履歴一覧で使用予定
+
+3. **Alpine.js モーダル**:
+   - カスタムイベント (`@open-modal.window`) でモーダルを開く
+   - トランジション効果追加（フェードイン/アウト、スケール）
+   - 閉じるボタン（×）、ESC キー、背景クリックでクローズ
+   - `x-cloak` でちらつき防止
+
+4. **コード品質改善**:
+   - `web/utils/` ディレクトリ新設
+   - ヘルパー関数を utils に分離し、API ルーターのコードを簡潔に保つ
+   - ファイル名生成ユーティリティに docstring と使用例を追加
+
 **次フェーズへの引き継ぎ事項**:
-- Repository Pattern は Phase 4～7 でも継続使用
+- Repository Pattern は Phase 5～7 でも継続使用
 - Character と History の Repository は Phase 5, 6 で拡張予定
-- Phase 4 では、T041 (ダウンロードエンドポイント) と T046 (モーダル機能の完成) を優先実装
+- サムネイルエンドポイント（T042）は Phase 6 の履歴一覧で活用予定
