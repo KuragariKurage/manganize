@@ -4,9 +4,9 @@
         <h3 class="text-lg font-semibold mb-4">生成中...</h3>
 
         <!-- Progress bar -->
-        <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+        <div class="progress-container">
             <div id="progress-bar"
-                 class="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                 class="progress-bar progress-bar-blue"
                  style="width: 0%">
             </div>
         </div>
@@ -18,7 +18,7 @@
 
         <!-- Loading spinner -->
         <div class="flex justify-center mt-4">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div class="spinner"></div>
         </div>
     </div>
 </div>
@@ -42,11 +42,11 @@
 
                 // Change color based on status
                 if (data.status === 'error') {
-                    progressBar.classList.remove('bg-blue-600', 'bg-green-600');
-                    progressBar.classList.add('bg-red-600');
+                    progressBar.classList.remove('progress-bar-blue', 'progress-bar-green');
+                    progressBar.classList.add('progress-bar-red');
                 } else if (data.status === 'completed') {
-                    progressBar.classList.remove('bg-blue-600', 'bg-red-600');
-                    progressBar.classList.add('bg-green-600');
+                    progressBar.classList.remove('progress-bar-blue', 'progress-bar-red');
+                    progressBar.classList.add('progress-bar-green');
                 }
             }
 

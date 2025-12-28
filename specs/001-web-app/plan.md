@@ -220,7 +220,32 @@ uv.lock                  # Updated lock file
    - ヘルパー関数を utils に分離し、API ルーターのコードを簡潔に保つ
    - ファイル名生成ユーティリティに docstring と使用例を追加
 
+**Phase 5 実装詳細** (2025-12-28 完了):
+
+1. **Character Management API**:
+   - 完全な CRUD エンドポイント（GET /characters, GET /characters/{name}, POST, PUT, DELETE）
+   - CharacterService レイヤーで業務ロジック実装（デフォルトキャラクター保護、重複チェック）
+   - Pydantic schemas with nested SpeechStyle model
+   - 名前バリデーション：正規表現 `^[a-zA-Z0-9_]+$`
+
+2. **Character Management UI**:
+   - `/character` ページ - 一覧と作成・編集フォーム
+   - HTMX による動的更新（リスト再読み込み、非同期削除）
+   - JavaScript による編集モード切り替え
+   - デフォルトキャラクターの削除ボタン無効化
+
+3. **メインページ統合**:
+   - キャラクタードロップダウンを動的生成（GET /api/characters から取得）
+   - デフォルトキャラクターの自動選択
+   - 生成時に選択したキャラクターを使用
+
+4. **設計判断**:
+   - multipart/form-data ではなく JSON body を使用（シンプルさ優先）
+   - 画像アップロード機能は Phase 7 に延期（MVP に不要）
+   - CharacterRepository は Phase 2 で実装済みのものを活用
+
 **次フェーズへの引き継ぎ事項**:
-- Repository Pattern は Phase 5～7 でも継続使用
-- Character と History の Repository は Phase 5, 6 で拡張予定
+- Repository Pattern は Phase 6～7 でも継続使用
+- History Repository は Phase 6 で実装予定
 - サムネイルエンドポイント（T042）は Phase 6 の履歴一覧で活用予定
+- キャラクター画像アップロード機能は Phase 7 で実装検討

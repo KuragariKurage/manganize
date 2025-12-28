@@ -31,6 +31,18 @@ class CharacterRepository(BaseRepository[Character]):
         """
         return await self.get(name)
 
+    async def create(self, character: Character) -> Character:
+        """
+        Create new character record.
+
+        Args:
+            character: Character entity to create
+
+        Returns:
+            The created character
+        """
+        return await self.add(character)
+
     async def get_default(self) -> Character | None:
         """
         Get the default character.

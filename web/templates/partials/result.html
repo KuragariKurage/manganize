@@ -35,10 +35,8 @@
                 <!-- Error -->
                 <h3 class="text-lg font-semibold mb-4 text-red-600">エラーが発生しました</h3>
 
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                    <p class="text-red-800">
-                        {{ generation.error_message or '不明なエラーが発生しました' }}
-                    </p>
+                <div class="alert alert-error">
+                    <p>{{ generation.error_message or '不明なエラーが発生しました' }}</p>
                 </div>
 
                 <!-- Retry button -->
