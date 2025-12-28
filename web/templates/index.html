@@ -12,16 +12,18 @@
     </p>
 
     <!-- Generation Form -->
-    <div class="card mb-6">
+    <div class="card mb-6" x-data="generationForm()">
         <form id="generation-form"
               hx-post="/api/generate"
               hx-target="#content-area"
-              hx-swap="innerHTML">
+              hx-swap="innerHTML"
+              @htmx:before-request.self="isGenerating = true">
 
             <!-- Character selection -->
             <div class="mb-4">
                 <label for="character" class="block text-sm font-medium text-gray-700 mb-2">
                     キャラクター
+                    <span class="spinner-sm htmx-indicator" hx-indicator></span>
                 </label>
                 <select id="character"
                         name="character"
@@ -29,7 +31,8 @@
                         required
                         hx-get="/api/characters"
                         hx-trigger="load"
-                        hx-swap="none">
+                        hx-swap="none"
+                        hx-indicator=".htmx-indicator">
                     <option value="kurage">くらげちゃん (デフォルト)</option>
                 </select>
             </div>
@@ -39,6 +42,69 @@
                 <label for="topic" class="block text-sm font-medium text-gray-700 mb-2">
                     トピック
                 </label>
+
+                <!-- File upload drop zone -->
+                <div class="mb-3 border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200"
+                     :class="{
+                         'border-blue-500 bg-blue-50': isDragging,
+                         'border-green-400 bg-green-50': uploadedFilename && !isUploading,
+                         'border-gray-300': !isDragging && !uploadedFilename
+                     }"
+                     @dragover.prevent="isDragging = true"
+                     @dragleave.prevent="isDragging = false"
+                     @drop.prevent="handleDrop">
+                    <input type="file"
+                           id="file-input"
+                           x-ref="fileInput"
+                           accept=".txt,.pdf,.md,.markdown"
+                           class="hidden"
+                           @change="handleFileSelect">
+
+                    <div x-show="!isUploading && !uploadedFilename">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-600">
+                            <button type="button"
+                                    @click="$refs.fileInput.click()"
+                                    class="text-blue-600 hover:text-blue-500 font-medium">
+                                ファイルを選択
+                            </button>
+                            またはドラッグ＆ドロップ
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            TXT, PDF, MD（最大10MB）
+                        </p>
+                    </div>
+
+                    <div x-show="isUploading" class="py-2">
+                        <div class="spinner mx-auto"></div>
+                        <p class="text-sm text-gray-600 mt-2">アップロード中...</p>
+                    </div>
+
+                    <div x-show="uploadedFilename && !isUploading" class="py-3">
+                        <div class="flex items-center justify-center space-x-3">
+                            <div class="flex-shrink-0">
+                                <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <p class="text-sm font-medium text-green-800">アップロード完了</p>
+                                <p class="text-xs text-green-700 mt-0.5 truncate" x-text="uploadedFilename"></p>
+                            </div>
+                        </div>
+                        <button type="button"
+                                @click="clearFile"
+                                class="mt-3 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            削除して再選択
+                        </button>
+                    </div>
+                </div>
+
                 <textarea id="topic"
                           name="topic"
                           rows="5"
@@ -46,9 +112,10 @@
                           placeholder="マンガにしたいトピックを入力してください（例: Transformerアーキテクチャについて）"
                           required
                           minlength="1"
-                          maxlength="10000"></textarea>
+                          maxlength="50000"
+                          x-model="topicText"></textarea>
                 <p class="text-sm text-gray-500 mt-1">
-                    または、ファイルをドラッグ＆ドロップ (Phase 7 で実装)
+                    テキストを直接入力するか、上記からファイルをアップロードしてください
                 </p>
             </div>
 
@@ -56,8 +123,11 @@
             <div class="flex justify-center">
                 <button type="submit"
                         id="generate-btn"
-                        class="btn-primary">
+                        class="btn-primary"
+                        :disabled="!canGenerate"
+                        hx-indicator="#generate-spinner">
                     <span id="generate-text">生成する</span>
+                    <span id="generate-spinner" class="spinner-sm htmx-indicator"></span>
                 </button>
             </div>
         </form>
@@ -115,6 +185,72 @@
 </div>
 
 <script>
+    // Generation form with file upload
+    function generationForm() {
+        return {
+            topicText: '',
+            isDragging: false,
+            isUploading: false,
+            uploadedFilename: '',
+            isGenerating: false,
+
+            get canGenerate() {
+                return this.topicText.trim().length > 0 && !this.isGenerating;
+            },
+
+            handleDrop(event) {
+                this.isDragging = false;
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    this.uploadFile(files[0]);
+                }
+            },
+
+            handleFileSelect(event) {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    this.uploadFile(files[0]);
+                }
+            },
+
+            async uploadFile(file) {
+                this.isUploading = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'アップロードに失敗しました');
+                    }
+
+                    const data = await response.json();
+                    this.topicText = data.text;
+                    this.uploadedFilename = data.filename;
+
+                    window.showToast('ファイルをアップロードしました', 'success');
+                } catch (error) {
+                    window.showToast(error.message, 'error');
+                    console.error('Upload error:', error);
+                } finally {
+                    this.isUploading = false;
+                }
+            },
+
+            clearFile() {
+                this.uploadedFilename = '';
+                this.topicText = '';
+                document.getElementById('file-input').value = '';
+            }
+        };
+    }
+
     // Open image modal using Alpine.js custom event
     function openImageModal(imageId) {
         window.dispatchEvent(new CustomEvent('open-modal', {
@@ -128,38 +264,6 @@
         if (contentArea) {
             contentArea.innerHTML = '';
         }
-        isGenerating = false;
-        updateButtonState();
-    }
-
-    // Button state management
-    const topicInput = document.getElementById('topic');
-    const generateBtn = document.getElementById('generate-btn');
-    const generateText = document.getElementById('generate-text');
-    const generationForm = document.getElementById('generation-form');
-    let isGenerating = false;
-
-    function updateButtonState() {
-        if (topicInput && generateBtn && generateText) {
-            const hasText = topicInput.value.trim().length > 0;
-            generateBtn.disabled = !hasText || isGenerating;
-        }
-    }
-
-    // Handle form submission
-    if (generationForm) {
-        generationForm.addEventListener('htmx:beforeRequest', function() {
-            isGenerating = true;
-            updateButtonState();
-        });
-
-        // Note: We don't re-enable on afterRequest because generation continues via SSE
-        // The button will be re-enabled when user manually clears or when result includes a reset button
-    }
-
-    if (topicInput) {
-        topicInput.addEventListener('input', updateButtonState);
-        updateButtonState(); // Initial check
     }
 
     // Load characters for dropdown

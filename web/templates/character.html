@@ -14,13 +14,22 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Character list -->
         <div class="card">
-            <h2 class="text-2xl font-bold mb-4">キャラクター一覧</h2>
+            <h2 class="text-2xl font-bold mb-4">
+                キャラクター一覧
+                <span class="spinner-sm htmx-indicator ml-2" hx-indicator></span>
+            </h2>
 
             <div id="character-list"
                  hx-get="/api/characters"
                  hx-trigger="load, refresh-characters from:body"
-                 hx-swap="innerHTML">
-                <p class="text-gray-500">読み込み中...</p>
+                 hx-swap="innerHTML"
+                 hx-indicator=".htmx-indicator">
+                <!-- Skeleton loading -->
+                <div class="space-y-3">
+                    <div class="skeleton h-16 w-full"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                </div>
             </div>
         </div>
 

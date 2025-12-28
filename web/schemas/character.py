@@ -9,18 +9,17 @@ from pydantic import BaseModel, Field, field_validator
 class SpeechStyle(BaseModel):
     """Speech style configuration for a character"""
 
-    tone: str = Field(..., min_length=1, max_length=500, description="Voice tone description")
+    tone: str = Field(
+        ..., min_length=1, max_length=500, description="Voice tone description"
+    )
     patterns: list[str] = Field(
-        default_factory=list,
-        description="Common speech patterns the character uses"
+        default_factory=list, description="Common speech patterns the character uses"
     )
     examples: list[str] = Field(
-        default_factory=list,
-        description="Example phrases the character would say"
+        default_factory=list, description="Example phrases the character would say"
     )
     forbidden: list[str] = Field(
-        default_factory=list,
-        description="Speech patterns the character should avoid"
+        default_factory=list, description="Speech patterns the character should avoid"
     )
 
 
@@ -32,41 +31,28 @@ class CharacterCreate(BaseModel):
         min_length=1,
         max_length=100,
         description="ASCII identifier (a-zA-Z0-9_)",
-        pattern=r"^[a-zA-Z0-9_]+$"
+        pattern=r"^[a-zA-Z0-9_]+$",
     )
     display_name: str = Field(
-        ...,
-        min_length=1,
-        max_length=200,
-        description="Display name (Japanese OK)"
+        ..., min_length=1, max_length=200, description="Display name (Japanese OK)"
     )
-    nickname: str | None = Field(
-        None,
-        max_length=200,
-        description="Optional nickname"
-    )
+    nickname: str | None = Field(None, max_length=200, description="Optional nickname")
     attributes: list[str] = Field(
-        ...,
-        min_items=1,
-        description="Character attributes (e.g., '技術オタク')"
+        ..., min_items=1, description="Character attributes (e.g., '技術オタク')"
     )
     personality: str = Field(
-        ...,
-        min_length=1,
-        max_length=2000,
-        description="Base personality description"
+        ..., min_length=1, max_length=2000, description="Base personality description"
     )
-    speech_style: SpeechStyle = Field(
-        ...,
-        description="Speech patterns and tone"
-    )
+    speech_style: SpeechStyle = Field(..., description="Speech patterns and tone")
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
         """Validate name contains only ASCII alphanumeric and underscore"""
         if not re.match(r"^[a-zA-Z0-9_]+$", v):
-            raise ValueError("Name must contain only ASCII letters, numbers, and underscores")
+            raise ValueError(
+                "Name must contain only ASCII letters, numbers, and underscores"
+            )
         return v
 
 

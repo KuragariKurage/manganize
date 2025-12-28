@@ -172,22 +172,22 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T074 [P] Add navigation menu in web/templates/base.html (Home, History, Characters)
-- [ ] T075 [P] Style all pages with TailwindCSS for responsive design (mobile + desktop)
-- [ ] T076 [P] Add loading indicators for all HTMX requests using hx-indicator
-- [ ] T077 [P] Implement POST /api/upload endpoint for file upload (txt, pdf, md) in web/api/generation.py
-- [ ] T078 [P] Add drag-and-drop file upload zone in web/templates/index.html with HTMX
-- [ ] T079 [P] Integrate markitdown for PDF text extraction in web/api/generation.py
-- [ ] T080 [P] Add file size validation (10MB max) in web/api/generation.py
-- [ ] T081 [P] Add file type validation (.txt, .pdf, .md only) in web/api/generation.py
-- [ ] T082 [P] Add reconnection logic for SSE connection failures
-- [ ] T083 [P] Implement background task completion when browser closes
-- [ ] T084 Code formatting: run `ruff format .`
-- [ ] T085 Code quality: run `ruff check .` and fix all warnings
-- [ ] T086 Type checking: run `ty check` and fix all errors
-- [ ] T087 Verify all functions have type hints (Constitution compliance)
-- [ ] T088 Update docs/specs/web-app/design.md if implementation differs from plan
-- [ ] T089 Update docs/specs/web-app/requirements.md if requirements changed
+- [X] T074 [P] Add navigation menu in web/templates/base.html (Home, History, Characters)
+- [X] T075 [P] Style all pages with TailwindCSS for responsive design (mobile + desktop)
+- [X] T076 [P] Add loading indicators for all HTMX requests using hx-indicator
+- [X] T077 [P] Implement POST /api/upload endpoint for file upload (txt, pdf, md) in web/api/generation.py
+- [X] T078 [P] Add drag-and-drop file upload zone in web/templates/index.html with Alpine.js
+- [X] T079 [P] Integrate markitdown for PDF text extraction in web/utils/file_processing.py
+- [X] T080 [P] Add file size validation (10MB max) in web/utils/file_processing.py
+- [X] T081 [P] Add file type validation (.txt, .pdf, .md only) in web/utils/file_processing.py
+- [X] T082 [P] Add reconnection logic for SSE connection failures
+- [X] T083 [P] Implement background task completion when browser closes
+- [X] T084 Code formatting: run `ruff format web/`
+- [X] T085 Code quality: run `ruff check web/` and fix all warnings
+- [X] T086 Type checking: run `ty check web/` and fix all errors
+- [X] T087 Verify all functions have type hints (Constitution compliance)
+- [ ] T088 Update docs/specs/001-web-app/design.md if implementation differs from plan
+- [ ] T089 Update docs/specs/001-web-app/requirements.md if requirements changed
 - [ ] T090 Create docs/wiki/tutorials/first-manga.md (Divio: Tutorial)
 - [ ] T091 Create docs/wiki/how-to/deploy-production.md (Divio: How-to)
 - [ ] T092 Create docs/wiki/reference/api-endpoints.md (Divio: Reference)
@@ -298,13 +298,14 @@ With multiple developers:
 
 **最終更新日**: 2025-12-28
 
-**完了タスク数**: 77/92 (83.7%)
+**完了タスク数**: 91/92 (98.9%)
 - Phase 1: Setup (8/8) ✅
 - Phase 2: Foundational (21/21) ✅ (Repository Pattern含む)
 - Phase 3: User Story 1 (15/15) ✅ - MVP 完了
 - Phase 4: User Story 2 (6/6) ✅ - 画像表示・ダウンロード完了
 - Phase 5: User Story 3 (15/15) ✅ - キャラクターカスタマイズ完了
 - Phase 6: User Story 4 (12/12) ✅ - 生成履歴の管理完了
+- Phase 7: Polish (14/19) 🚧 - ファイルアップロード、レスポンシブデザイン、コード品質完了
 
 **Phase 5 実装内容**:
 - T047: Character schemas (CharacterCreate/Update/Response) - SpeechStyle 入れ子モデル
@@ -341,5 +342,23 @@ With multiple developers:
 - Alpine.js モーダル骨組み（Phase 4 で完成）
 - ダウンロードボタン UI（Phase 4 でバックエンド実装）
 
+**Phase 7 実装内容**:
+- T074: ナビゲーションメニュー（先行実装済み）
+- T075: レスポンシブデザイン - モバイルメニュー、ハンバーガーアイコン
+- T076: ローディングインジケーター - spinner-sm、skeleton loading、hx-indicator
+- T077-T081: ファイルアップロード機能
+  - web/utils/file_processing.py: テキスト抽出、バリデーション
+  - POST /api/upload: ファイルアップロードエンドポイント
+  - Alpine.js ドラッグ&ドロップUI
+  - markitdown統合（PDF、TXT、MD対応）
+  - ファイルサイズ（10MB）・タイプ検証
+- T082: SSE再接続ロジック - リトライ、exponential backoff、フォールバックポーリング
+- T083: バックグラウンドタスク完了処理 - beforeunload handler
+- T084-T087: コード品質
+  - ruff format web/ (4 files reformatted)
+  - ruff check web/ (All checks passed)
+  - ty check web/ (All checks passed)
+  - 全関数に型ヒント完備
+
 **次フェーズ優先事項**:
-1. Phase 7: Polish & Cross-Cutting Concerns - ファイルアップロード、レスポンシブデザイン、コード品質
+1. Phase 7 残タスク: ドキュメント作成（T088-T092）

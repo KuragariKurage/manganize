@@ -26,6 +26,7 @@ class GenerationResponse(BaseModel):
     input_topic: str
     generated_title: str
     status: str
+    error_message: str | None
     created_at: datetime
     completed_at: datetime | None
 

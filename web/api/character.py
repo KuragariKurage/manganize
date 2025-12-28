@@ -27,10 +27,7 @@ async def list_characters(
         List of characters with basic information
     """
     characters = await character_service.list_characters(db_session)
-    return [
-        CharacterListResponse.model_validate(char)
-        for char in characters
-    ]
+    return [CharacterListResponse.model_validate(char) for char in characters]
 
 
 @router.get("/characters/{name}", response_model=CharacterResponse)

@@ -479,3 +479,53 @@
 .htmx-swapping .htmx-indicator {
   display: inline-block;
 }
+
+/* Loading spinner for buttons */
+.spinner-sm {
+  display: inline-block;
+  border-radius: 9999px;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-bottom-color: currentColor;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgb(0 0 0 / 0.5);
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-overlay-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  text-align: center;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, rgb(229 231 235) 25%, rgb(243 244 246) 50%, rgb(229 231 235) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 0.25rem;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}

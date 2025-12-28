@@ -1,7 +1,7 @@
 """Database connection and session management"""
 
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import (
@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 from web.config import settings
+
+if TYPE_CHECKING:
+    from web.repositories.database_session import DatabaseSession
 
 # Create async engine
 engine = create_async_engine(

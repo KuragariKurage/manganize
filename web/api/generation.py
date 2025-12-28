@@ -2,7 +2,7 @@
 
 import io
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from PIL import Image
 from sse_starlette.sse import EventSourceResponse
@@ -11,9 +11,48 @@ from web.models.database import get_db_session
 from web.repositories.database_session import DatabaseSession
 from web.services.generator import generator_service
 from web.templates import templates
+from web.utils.file_processing import extract_text_from_file
 from web.utils.filename import generate_download_filename
 
 router = APIRouter()
+
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
+    """
+    Upload and extract text from a file (txt, pdf, md).
+
+    Args:
+        file: Uploaded file
+
+    Returns:
+        JSON with extracted text content
+
+    Raises:
+        HTTPException: If file validation or text extraction fails
+    """
+    try:
+        text = await extract_text_from_file(file)
+
+        # Limit text length to prevent excessive input
+        max_length = 50000  # characters
+        if len(text) > max_length:
+            text = (
+                text[:max_length] + "\n\n[テキストが長すぎるため、切り詰められました]"
+            )
+
+        return {
+            "text": text,
+            "filename": file.filename or "unknown",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"ファイルのアップロードに失敗しました: {str(e)}",
+        )
 
 
 @router.post("/generate")

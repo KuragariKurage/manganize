@@ -26,60 +26,136 @@
 <script>
 (function() {
     const generationId = "{{ generation_id }}";
-    const eventSource = new EventSource("/api/generate/" + generationId + "/stream");
+    let eventSource = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000; // 2 seconds
+    let isCompleted = false;
 
     const progressBar = document.getElementById('progress-bar');
     const statusMessage = document.getElementById('status-message');
 
-    eventSource.addEventListener('progress', function(event) {
-        try {
-            const data = JSON.parse(event.data);
-            console.log('Progress update:', data);
+    function connectSSE() {
+        if (isCompleted) {
+            return;
+        }
 
-            // Update progress bar
-            if (progressBar) {
-                progressBar.style.width = data.progress + '%';
+        eventSource = new EventSource("/api/generate/" + generationId + "/stream");
 
-                // Change color based on status
-                if (data.status === 'error') {
-                    progressBar.classList.remove('progress-bar-blue', 'progress-bar-green');
-                    progressBar.classList.add('progress-bar-red');
-                } else if (data.status === 'completed') {
-                    progressBar.classList.remove('progress-bar-blue', 'progress-bar-red');
-                    progressBar.classList.add('progress-bar-green');
+        eventSource.addEventListener('progress', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Progress update:', data);
+
+                // Reset retry count on successful message
+                retryCount = 0;
+
+                // Update progress bar
+                if (progressBar) {
+                    progressBar.style.width = data.progress + '%';
+
+                    // Change color based on status
+                    if (data.status === 'error') {
+                        progressBar.classList.remove('progress-bar-blue', 'progress-bar-green');
+                        progressBar.classList.add('progress-bar-red');
+                    } else if (data.status === 'completed') {
+                        progressBar.classList.remove('progress-bar-blue', 'progress-bar-red');
+                        progressBar.classList.add('progress-bar-green');
+                    }
                 }
+
+                // Update status message
+                if (statusMessage) {
+                    statusMessage.textContent = data.message;
+                }
+
+                // If completed or error, load result
+                if (data.status === 'completed' || data.status === 'error') {
+                    isCompleted = true;
+                    eventSource.close();
+
+                    setTimeout(() => {
+                        // Use HTMX to load the result
+                        htmx.ajax('GET', '/api/generate/' + generationId + '/result', {
+                            target: '#content-area',
+                            swap: 'innerHTML'
+                        });
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Error parsing SSE data:', error);
+            }
+        });
+
+        eventSource.onerror = function(error) {
+            console.error('SSE connection error:', error);
+            eventSource.close();
+
+            if (isCompleted) {
+                return;
             }
 
-            // Update status message
-            if (statusMessage) {
-                statusMessage.textContent = data.message;
-            }
-
-            // If completed or error, load result
-            if (data.status === 'completed' || data.status === 'error') {
-                eventSource.close();
+            // Implement retry logic
+            if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                if (statusMessage) {
+                    statusMessage.textContent = `接続が切断されました。再接続を試みています... (${retryCount}/${MAX_RETRIES})`;
+                }
 
                 setTimeout(() => {
-                    // Use HTMX to load the result
+                    console.log(`Retrying SSE connection (attempt ${retryCount})`);
+                    connectSSE();
+                }, RETRY_DELAY * retryCount); // Exponential backoff
+            } else {
+                if (statusMessage) {
+                    statusMessage.textContent = '接続エラーが発生しました。生成は継続されていますが、進捗が表示されません。';
+                    statusMessage.classList.add('text-red-600');
+                }
+
+                // Even if SSE fails, generation may continue in background
+                // Poll for result after a delay
+                setTimeout(() => {
+                    pollForResult();
+                }, 5000);
+            }
+        };
+
+        // Handle browser tab close/navigation
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            // Note: Generation continues on server even if client disconnects
+        });
+    }
+
+    // Poll for generation result (fallback when SSE fails)
+    function pollForResult() {
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/generate/' + generationId + '/result');
+                if (response.ok) {
+                    clearInterval(pollInterval);
+                    isCompleted = true;
+
+                    // Load result
                     htmx.ajax('GET', '/api/generate/' + generationId + '/result', {
                         target: '#content-area',
                         swap: 'innerHTML'
                     });
-                }, 1000);
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
             }
-        } catch (error) {
-            console.error('Error parsing SSE data:', error);
-        }
-    });
+        }, 5000); // Poll every 5 seconds
 
-    eventSource.onerror = function(error) {
-        console.error('SSE connection error:', error);
-        eventSource.close();
+        // Stop polling after 5 minutes
+        setTimeout(() => {
+            clearInterval(pollInterval);
+        }, 300000);
+    }
 
-        if (statusMessage) {
-            statusMessage.textContent = '接続エラーが発生しました。ページを再読み込みしてください。';
-            statusMessage.classList.add('text-red-600');
-        }
-    };
+    // Start connection
+    connectSSE();
 })();
 </script>
