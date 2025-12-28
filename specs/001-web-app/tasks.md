@@ -41,6 +41,10 @@
 
 - [X] T009 [P] Create web/models/__init__.py
 - [X] T010 [P] Create web/models/database.py with async SQLAlchemy engine setup
+- [X] T010.1 [P] Create web/repositories/__init__.py
+- [X] T010.2 [P] Create web/repositories/base.py with BaseRepository class
+- [X] T010.3 [P] Create web/repositories/database_session.py with DatabaseSession (Unit of Work pattern)
+- [X] T010.4 [P] Create web/templates.py for Jinja2 templates configuration
 - [X] T011 [P] Create web/schemas/__init__.py
 - [X] T012 [P] Create web/services/__init__.py
 - [X] T013 [P] Create web/api/__init__.py
@@ -48,13 +52,15 @@
 - [X] T015 Setup Alembic for database migrations in alembic/ directory
 - [X] T016 [P] Create web/models/generation.py with GenerationHistory model
 - [X] T017 [P] Create web/models/character.py with Character model
+- [X] T017.1 [P] Create web/repositories/generation.py with GenerationRepository
+- [X] T017.2 [P] Create web/repositories/character.py with CharacterRepository
 - [X] T018 Generate Alembic migration for GenerationHistory and Character tables
 - [X] T019 Run Alembic migration to create database tables
 - [X] T020 [P] Create web/models/seed.py to load default character from characters/kurage/kurage.yaml
 - [X] T021 Run seed script to populate default character (kurage)
 - [X] T022 [P] Create web/main.py with FastAPI app initialization and CORS middleware
 - [X] T023 [P] Setup StaticFiles mount for /static in web/main.py
-- [X] T024 [P] Setup Jinja2Templates configuration in web/main.py
+- [X] T024 [P] Setup Jinja2Templates configuration in web/templates.py (imported from web/main.py)
 - [X] T025 [P] Add slowapi rate limiting middleware (10 req/min/IP) in web/main.py
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
@@ -74,15 +80,15 @@
 - [X] T028 [P] [US1] Create web/templates/partials/progress.html for SSE progress display
 - [X] T029 [P] [US1] Create web/templates/partials/result.html for generated image display
 - [X] T030 [US1] Create web/services/generator.py to wrap ManganizeAgent with SSE progress callbacks
-- [X] T031 [US1] Implement title generation logic in web/services/generator.py using Gemini Flash (3-5 words)
+- [X] T031 [US1] Extract topic_title from ManganizeAgent Researcher node output in web/services/generator.py (3-5 words). On failure, fallback to datetime-only format
 - [X] T032 [US1] Create web/api/generation.py with POST /api/generate endpoint
 - [X] T033 [US1] Implement GET /api/generate/{id}/stream SSE endpoint in web/api/generation.py
 - [X] T034 [US1] Implement GET /api/generate/{id}/result HTML partial endpoint in web/api/generation.py
 - [X] T035 [US1] Implement GET /api/images/{id} endpoint to serve PNG images in web/api/generation.py
 - [X] T036 [US1] Add GET / route in web/main.py to render index.html template
 - [X] T037 [US1] Connect HTMX form submission to POST /api/generate in web/templates/index.html
-- [X] T038 [US1] Connect SSE progress updates using hx-ext="sse" in web/templates/partials/progress.html
-- [X] T039 [US1] Add validation: disable generate button when text area is empty (HTMX hx-disable-button)
+- [X] T038 [US1] Implement SSE progress updates using EventSource API in web/templates/partials/progress.html
+- [X] T039 [US1] Add validation: disable generate button when text area is empty (JavaScript event listener on topic input)
 - [X] T040 [US1] Add error handling: display error message and retry button on generation failure
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
@@ -284,3 +290,35 @@ With multiple developers:
 - FastAPI auto-reload enabled for rapid iteration
 - SSE connection must handle reconnection gracefully
 - All API endpoints must include proper error handling and validation
+
+---
+
+## Implementation Status
+
+**Phase 3 (MVP) 完了日**: 2025-12-28
+
+**完了タスク数**: 44/92 (47.8%)
+- Phase 1: Setup (8/8) ✅
+- Phase 2: Foundational (21/21) ✅ (Repository Pattern含む)
+- Phase 3: User Story 1 (15/15) ✅
+
+**実装時の追加タスク**:
+- T010.1〜T010.4: Repository Pattern + Unit of Work + templates.py 分離
+- T017.1〜T017.2: GenerationRepository + CharacterRepository
+
+**アーキテクチャ改善**:
+- Repository Pattern + Unit of Work Pattern 導入
+- DatabaseSession による複数リポジトリの統合
+- SSE: vanilla JavaScript EventSource API を使用（HTMX SSE 拡張ではなく）
+- カスタム TailwindCSS コンポーネントクラスの定義
+
+**フロントエンド先行実装**:
+- ナビゲーションバー（T074 を先行実装）
+- Alpine.js モーダル骨組み（T046 部分完了）
+- ダウンロードボタン UI（T041 バックエンド未実装）
+
+**次フェーズ優先事項**:
+1. Phase 4 (User Story 2): 画像表示・ダウンロード - T041, T046 を最優先
+2. Phase 5 (User Story 3): キャラクターカスタマイズ - Repository Pattern を活用
+3. Phase 6 (User Story 4): 生成履歴の管理
+4. Phase 7: Polish & Cross-Cutting Concerns

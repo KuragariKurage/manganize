@@ -62,6 +62,7 @@ web/                     # Web application root
 ├── __init__.py
 ├── main.py              # FastAPI application entry point
 ├── config.py            # Configuration management (env vars, settings)
+├── templates.py         # Jinja2 templates configuration
 ├── api/                 # API routes
 │   ├── __init__.py
 │   ├── generation.py    # POST /api/generate, GET /api/generate/{id}/stream, etc.
@@ -71,7 +72,14 @@ web/                     # Web application root
 │   ├── __init__.py
 │   ├── database.py      # DB connection setup
 │   ├── generation.py    # GenerationHistory model
-│   └── character.py     # Character model
+│   ├── character.py     # Character model
+│   └── seed.py          # Database seeding (default character)
+├── repositories/        # Repository pattern (data access layer)
+│   ├── __init__.py
+│   ├── base.py          # Base repository class
+│   ├── database_session.py  # DatabaseSession (Unit of Work pattern)
+│   ├── generation.py    # GenerationRepository
+│   └── character.py     # CharacterRepository
 ├── schemas/             # Pydantic schemas for validation
 │   ├── __init__.py
 │   ├── generation.py    # GenerationCreate, GenerationResponse
@@ -126,8 +134,65 @@ uv.lock                  # Updated lock file
 
 **Structure Decision**: Web application structure (Option 2 variant). FastAPI backend と Jinja2/HTMX frontend を統合した単一プロジェクト構成。既存の `manganize/` コアエージェントはそのまま保持し、`web/` ディレクトリで FastAPI アプリケーションを新規構築。サーバーサイドレンダリング（SSR）を基本とし、HTMX で動的な UI 更新を実現。
 
+**Architecture Patterns** (実装時に追加):
+- **Repository Pattern**: データアクセスロジックを `repositories/` に分離。モデル層とサービス層の疎結合を実現。
+- **Unit of Work Pattern**: `DatabaseSession` クラスで複数リポジトリのトランザクション管理を統合。commit/rollback の制御を一元化。
+- **Dependency Injection**: FastAPI の `Depends` を使用して、各エンドポイントに `DatabaseSession` を注入。テスト容易性とコードの可読性を向上。
+
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 該当なし - すべての原則に準拠
+
+## Implementation Notes
+
+**Phase 3 (MVP) 完了時の追加実装**:
+
+以下のアーキテクチャパターンが実装時に追加されました（Phase 2 Foundational で導入）：
+
+1. **Repository Pattern + Unit of Work Pattern**
+   - データアクセスロジックを `web/repositories/` に分離
+   - `DatabaseSession` クラスで複数リポジトリのトランザクション管理を統合
+   - サービス層からモデル層への直接アクセスを排除し、保守性を向上
+   - 理由: 将来的なデータベース変更やテストの容易性を考慮
+
+2. **templates.py の分離**
+   - Jinja2 テンプレート設定を `web/templates.py` に分離
+   - main.py の肥大化を防止
+   - 理由: 設定の一元管理と可読性向上
+
+3. **タイトル生成の実装詳細**
+   - ManganizeAgent の Researcher ノードが `topic_title` を生成（3-5単語）
+   - generator.py はそれを受け取り、生成失敗時は `datetime.now().strftime("%Y%m%d_%H%M%S")` をフォールバックとして使用
+   - 実装: `web/services/generator.py` L170-172
+   - 仕様準拠: spec.md Assumptions L138
+
+4. **SSE 実装方法**
+   - HTMX の `hx-ext="sse"` ではなく、vanilla JavaScript の `EventSource` API を使用
+   - 理由: より細かい制御が必要（進捗バーの色変更、完了時の自動リロード等）
+   - 実装: `web/templates/partials/progress.html` L29-83
+   - HTMX との統合: 完了時に `htmx.ajax()` を使用して結果を動的にロード（L64-67）
+
+**変更の影響範囲**:
+- tasks.md: T010.1～T010.4, T017.1～T017.2, T024, T031 を追加・更新
+- plan.md: Project Structure と Architecture Patterns セクションを更新
+- spec.md: 変更なし（実装は仕様に準拠）
+
+**フロントエンドの先行実装**:
+以下の UI 要素が Phase 3 (MVP) で実装済みですが、対応するバックエンド API や機能は後続フェーズで実装予定：
+
+- **ナビゲーション**: `web/templates/base.html` L22-33 にナビゲーションバーを実装済み（T074 を先行実装）
+  - 履歴ページ、キャラクターページへのリンクは Phase 5, 6 で機能化予定
+- **Alpine.js 導入**: `web/templates/base.html` L16 で Alpine.js を CDN から読み込み済み
+  - Phase 4 のモーダル機能（T046）で本格利用予定
+- **モーダル骨組み**: `web/templates/index.html` L70-84 に Alpine.js モーダルを追加済み（T046 部分完了）
+- **ダウンロードリンク**: `web/templates/partials/result.html` L23-27 にダウンロードボタンを追加済み（T041 対応のバックエンドは未実装）
+- **カスタム TailwindCSS コンポーネント**: `web/static/css/input.css` に再利用可能なコンポーネントクラスを定義
+  - `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.card`, `.input-field`, `.textarea-field`
+  - HTMX インジケーター用のユーティリティクラス（L90-100）
+
+**次フェーズへの引き継ぎ事項**:
+- Repository Pattern は Phase 4～7 でも継続使用
+- Character と History の Repository は Phase 5, 6 で拡張予定
+- Phase 4 では、T041 (ダウンロードエンドポイント) と T046 (モーダル機能の完成) を優先実装
