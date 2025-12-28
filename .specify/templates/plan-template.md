@@ -34,11 +34,12 @@
 Verify compliance with [Constitution](.specify/memory/constitution.md):
 
 - [ ] **Spec駆動開発**: Feature has corresponding spec files (requirements.md, design.md, tasks.md)
-- [ ] **型安全性**: Plan includes type checking strategy (mypy configuration)
+- [ ] **型安全性**: Plan includes type checking strategy (ty configuration)
 - [ ] **EARS記法準拠**: Requirements follow EARS patterns (Ubiquitous, Event-driven, State-driven, Optional)
 - [ ] **Divioドキュメンテーション**: Documentation placement follows 4-quadrant system (tutorials/how-to/reference/explanation)
-- [ ] **コード品質**: Plan includes ruff and mypy quality gates
+- [ ] **コード品質**: Plan includes ruff and ty quality gates
 - [ ] **LangGraphベース設計**: If agent-related, follows AgentState and checkpoint patterns
+- [ ] **Webアプリケーションスタック**: If web app, uses HTMX + FastAPI + TailwindCSS + Jinja2 stack
 
 **Complexity Justification Required**: If any principle is violated, document in Complexity Tracking section below.
 

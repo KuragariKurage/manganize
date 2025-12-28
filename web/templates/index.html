@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Manganize - マンガ画像生成{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">
+        Manganize
+    </h1>
+    <p class="text-center text-gray-600 mb-8">
+        トピックを入力してマンガ画像を生成します
+    </p>
+
+    <!-- Generation Form -->
+    <div class="card mb-6">
+        <form id="generation-form"
+              hx-post="/api/generate"
+              hx-target="#content-area"
+              hx-swap="innerHTML">
+
+            <!-- Character selection -->
+            <div class="mb-4">
+                <label for="character" class="block text-sm font-medium text-gray-700 mb-2">
+                    キャラクター
+                </label>
+                <select id="character"
+                        name="character"
+                        class="input-field"
+                        required>
+                    <option value="kurage">くらげちゃん (デフォルト)</option>
+                </select>
+            </div>
+
+            <!-- Topic input -->
+            <div class="mb-4">
+                <label for="topic" class="block text-sm font-medium text-gray-700 mb-2">
+                    トピック
+                </label>
+                <textarea id="topic"
+                          name="topic"
+                          rows="5"
+                          class="textarea-field"
+                          placeholder="マンガにしたいトピックを入力してください（例: Transformerアーキテクチャについて）"
+                          required
+                          minlength="1"
+                          maxlength="10000"></textarea>
+                <p class="text-sm text-gray-500 mt-1">
+                    または、ファイルをドラッグ＆ドロップ (Phase 7 で実装)
+                </p>
+            </div>
+
+            <!-- Submit button -->
+            <div class="flex justify-center">
+                <button type="submit"
+                        id="generate-btn"
+                        class="btn-primary">
+                    <span id="generate-text">生成する</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Content area for progress and results -->
+    <div id="content-area">
+        <!-- Progress or results will be loaded here via HTMX -->
+    </div>
+</div>
+
+<!-- Image modal (for full-size view) -->
+<div id="image-modal"
+     x-data="{ open: false, imageId: '' }"
+     x-show="open"
+     @keydown.escape.window="open = false"
+     class="fixed inset-0 z-50 hidden"
+     style="display: none;">
+    <div class="fixed inset-0 bg-black bg-opacity-50" @click="open = false"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-4xl max-h-screen overflow-auto">
+            <img :src="'/api/images/' + imageId"
+                 alt="Generated manga"
+                 class="w-full h-auto">
+        </div>
+    </div>
+</div>
+
+<script>
+    // Open image modal
+    function openImageModal(imageId) {
+        const modal = document.getElementById('image-modal');
+        if (modal && window.Alpine) {
+            Alpine.store('modal', { open: true, imageId: imageId });
+        }
+    }
+
+    // Reset generation and clear content area
+    function resetGeneration() {
+        const contentArea = document.getElementById('content-area');
+        if (contentArea) {
+            contentArea.innerHTML = '';
+        }
+        isGenerating = false;
+        updateButtonState();
+    }
+
+    // Button state management
+    const topicInput = document.getElementById('topic');
+    const generateBtn = document.getElementById('generate-btn');
+    const generateText = document.getElementById('generate-text');
+    const generationForm = document.getElementById('generation-form');
+    let isGenerating = false;
+
+    function updateButtonState() {
+        if (topicInput && generateBtn && generateText) {
+            const hasText = topicInput.value.trim().length > 0;
+            generateBtn.disabled = !hasText || isGenerating;
+        }
+    }
+
+    // Handle form submission
+    if (generationForm) {
+        generationForm.addEventListener('htmx:beforeRequest', function() {
+            isGenerating = true;
+            updateButtonState();
+        });
+
+        // Note: We don't re-enable on afterRequest because generation continues via SSE
+        // The button will be re-enabled when user manually clears or when result includes a reset button
+    }
+
+    if (topicInput) {
+        topicInput.addEventListener('input', updateButtonState);
+        updateButtonState(); // Initial check
+    }
+</script>
+{% endblock %}

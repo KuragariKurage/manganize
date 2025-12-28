@@ -10,11 +10,19 @@
 
 ### 技術スタック
 
+#### コアエージェント
 - **言語**: Python 3.13+
 - **パッケージ管理**: uv
 - **フレームワーク**: LangGraph / LangChain
 - **LLM**: Google Generative AI (Gemini)
 - **開発ツール**: ty（型チェック）, ruff（リント・フォーマット）
+
+#### Webアプリケーション
+- **Web フレームワーク**: FastAPI
+- **テンプレートエンジン**: Jinja2
+- **フロントエンド動的化**: HTMX
+- **スタイリング**: TailwindCSS
+- **リアルタイム通信**: SSE（Server-Sent Events）
 
 ## Spec 駆動開発
 

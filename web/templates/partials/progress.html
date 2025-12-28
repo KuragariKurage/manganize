@@ -1,0 +1,85 @@
+<!-- Progress indicator for manga generation -->
+<div id="progress-container" class="mb-6">
+    <div class="card">
+        <h3 class="text-lg font-semibold mb-4">生成中...</h3>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+            <div id="progress-bar"
+                 class="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                 style="width: 0%">
+            </div>
+        </div>
+
+        <!-- Status message -->
+        <p id="status-message" class="text-gray-700 text-center">
+            準備中...
+        </p>
+
+        <!-- Loading spinner -->
+        <div class="flex justify-center mt-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const generationId = "{{ generation_id }}";
+    const eventSource = new EventSource("/api/generate/" + generationId + "/stream");
+
+    const progressBar = document.getElementById('progress-bar');
+    const statusMessage = document.getElementById('status-message');
+
+    eventSource.addEventListener('progress', function(event) {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('Progress update:', data);
+
+            // Update progress bar
+            if (progressBar) {
+                progressBar.style.width = data.progress + '%';
+
+                // Change color based on status
+                if (data.status === 'error') {
+                    progressBar.classList.remove('bg-blue-600', 'bg-green-600');
+                    progressBar.classList.add('bg-red-600');
+                } else if (data.status === 'completed') {
+                    progressBar.classList.remove('bg-blue-600', 'bg-red-600');
+                    progressBar.classList.add('bg-green-600');
+                }
+            }
+
+            // Update status message
+            if (statusMessage) {
+                statusMessage.textContent = data.message;
+            }
+
+            // If completed or error, load result
+            if (data.status === 'completed' || data.status === 'error') {
+                eventSource.close();
+
+                setTimeout(() => {
+                    // Use HTMX to load the result
+                    htmx.ajax('GET', '/api/generate/' + generationId + '/result', {
+                        target: '#content-area',
+                        swap: 'innerHTML'
+                    });
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('Error parsing SSE data:', error);
+        }
+    });
+
+    eventSource.onerror = function(error) {
+        console.error('SSE connection error:', error);
+        eventSource.close();
+
+        if (statusMessage) {
+            statusMessage.textContent = '接続エラーが発生しました。ページを再読み込みしてください。';
+            statusMessage.classList.add('text-red-600');
+        }
+    };
+})();
+</script>

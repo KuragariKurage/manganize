@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Custom component styles */
+@layer components {
+  .btn-primary {
+    background-color: rgb(37 99 235);
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgb(29 78 216);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-secondary {
+    background-color: rgb(75 85 99);
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgb(55 65 81);
+    }
+  }
+
+  .btn-danger {
+    background-color: rgb(220 38 38);
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgb(185 28 28);
+    }
+  }
+
+  .card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+    transition: box-shadow 0.2s;
+
+    &:hover {
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    }
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(209 213 219);
+    border-radius: 0.375rem;
+
+    &:focus {
+      outline: none;
+      ring: 2px;
+      ring-color: rgb(59 130 246);
+    }
+  }
+
+  .textarea-field {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(209 213 219);
+    border-radius: 0.375rem;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      ring: 2px;
+      ring-color: rgb(59 130 246);
+    }
+  }
+}
+
+/* Custom utility classes for HTMX */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator {
+  display: inline-block;
+}
+
+.htmx-swapping .htmx-indicator {
+  display: inline-block;
+}

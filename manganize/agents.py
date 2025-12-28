@@ -1,10 +1,12 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Literal, Optional, TypedDict
 
 from langchain.agents import create_agent
 from langchain.chat_models import BaseChatModel, init_chat_model
 from langchain.messages import SystemMessage
 from langchain_community.tools import DuckDuckGoSearchRun
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -19,6 +21,18 @@ from manganize.prompts import (
 from manganize.tools import generate_manga_image, read_document_file, retrieve_webpage
 
 
+class NodeName(StrEnum):
+    """Graph node names as constants"""
+
+    RESEARCHER = "researcher"
+    SCENARIO_WRITER = "scenario_writer"
+    IMAGE_GENERATOR = "image_generator"
+
+
+# Number of processing nodes (excluding START/END)
+PROCESSING_NODE_COUNT = 3
+
+
 class ManganizeInput(TypedDict):
     topic: str
 
@@ -30,6 +44,7 @@ class ManganizeState(TypedDict):
 
 
 class ManganizeOutput(TypedDict):
+    topic_title: str
     generated_image: Optional[bytes]
 
 
@@ -42,6 +57,7 @@ class ManganizeAgentState(
 
 
 class ResearcherAgentOutput(BaseModel):
+    topic_title: str = Field(description="トピックのタイトル")
     output: str = Field(description="構造化されたネタ帳（ファクトシート）の出力内容")
     relevance: float = Field(
         description="ユーザの入力に対する出力内容の関連度（0.0から1.0の間）。1.0に近いほど関連度が高い。"
@@ -68,14 +84,14 @@ class ManganizeAgent:
 
         self.researcher = create_agent(
             model=researcher_llm
-            or init_chat_model(model="google_genai:gemini-3-pro-preview"),
+            or init_chat_model(model="google_genai:gemini-2.5-pro"),
             tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
             system_prompt=SystemMessage(content=get_researcher_system_prompt()),
             response_format=ResearcherAgentOutput,
         )
         self.scenario_writer = create_agent(
             model=scenario_writer_llm
-            or init_chat_model(model="google_genai:gemini-3-pro-preview"),
+            or init_chat_model(model="google_genai:gemini-2.5-flash"),
             system_prompt=SystemMessage(
                 content=get_scenario_writer_system_prompt(self.character)
             ),
@@ -93,11 +109,13 @@ class ManganizeAgent:
         )
         response = result["structured_response"]
 
+        topic_title = response.topic_title
         content = response.output
         relevance = response.relevance
 
         return Command(
             update={
+                "topic_title": topic_title,
                 "research_results": content,
                 "research_results_relevance": relevance,
             },
@@ -125,7 +143,7 @@ class ManganizeAgent:
             update={
                 "scenario": content,
             },
-            goto="image_generator",
+            goto=NodeName.IMAGE_GENERATOR,
         )
 
     def _image_generator_node(self, state: ManganizeAgentState) -> Command:
@@ -140,26 +158,31 @@ class ManganizeAgent:
         else:
             return "researcher_is_relevant"
 
-    def compile_graph(self) -> CompiledStateGraph:
+    def compile_graph(
+        self, checkpointer: BaseCheckpointSaver | None = None
+    ) -> CompiledStateGraph:
+        if checkpointer is None:
+            checkpointer = InMemorySaver()
+
         builder = StateGraph(
             state_schema=ManganizeAgentState,  # type: ignore
             input_schema=ManganizeInput,  # type: ignore
             output_schema=ManganizeOutput,  # type: ignore
         )
 
-        builder.add_node("researcher", self._researcher_node)
-        builder.add_node("scenario_writer", self._scenario_writer_node)
-        builder.add_node("image_generator", self._image_generator_node)
+        builder.add_node(NodeName.RESEARCHER, self._researcher_node)
+        builder.add_node(NodeName.SCENARIO_WRITER, self._scenario_writer_node)
+        builder.add_node(NodeName.IMAGE_GENERATOR, self._image_generator_node)
 
-        builder.add_edge(START, "researcher")
+        builder.add_edge(START, NodeName.RESEARCHER)
         builder.add_conditional_edges(
-            "researcher",
+            NodeName.RESEARCHER,
             self._check_relevance,
             path_map={
                 "researcher_is_not_relevant": END,
-                "researcher_is_relevant": "scenario_writer",
+                "researcher_is_relevant": NodeName.SCENARIO_WRITER,
             },
         )
-        builder.add_edge("scenario_writer", "image_generator")
+        builder.add_edge(NodeName.SCENARIO_WRITER, NodeName.IMAGE_GENERATOR)
 
-        return builder.compile(checkpointer=InMemorySaver())
+        return builder.compile(checkpointer=checkpointer)

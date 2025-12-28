@@ -1,0 +1,258 @@
+openapi: 3.1.0
+info:
+  title: Manganize Generation API
+  description: マンガ画像生成とストリーミング進捗通知のAPI
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/generate:
+    post:
+      summary: マンガ画像生成を開始
+      operationId: startGeneration
+      tags:
+        - Generation
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                  description: マンガ化するトピック
+                character:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: 使用するキャラクター名
+              required:
+                - topic
+                - character
+      responses:
+        '200':
+          description: 生成リクエスト受付成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generation_id:
+                    type: string
+                    format: uuid
+                    description: 生成リクエストID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: レート制限超過
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/generate/{generation_id}/stream:
+    get:
+      summary: 生成進捗をSSEでストリーミング
+      operationId: streamProgress
+      tags:
+        - Generation
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 生成リクエストID
+      responses:
+        '200':
+          description: SSEストリーム
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  SSEイベント形式:
+                  event: progress
+                  data: <div>リサーチ中...</div>
+
+                  event: progress
+                  data: <div>シナリオ作成中...</div>
+
+                  event: progress
+                  data: <div>画像生成中...</div>
+
+                  event: complete
+                  data: <div hx-get="/api/generate/{generation_id}/result" hx-trigger="load"></div>
+
+                  event: error
+                  data: <div class="error">エラーメッセージ</div>
+        '404':
+          description: 生成リクエストが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/generate/{generation_id}/result:
+    get:
+      summary: 生成結果のHTMLパーシャルを取得
+      operationId: getResult
+      tags:
+        - Generation
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 生成結果のHTMLフラグメント
+          content:
+            text/html:
+              schema:
+                type: string
+                example: |
+                  <div class="result">
+                    <img src="/api/images/{generation_id}" alt="Generated manga">
+                    <button hx-get="/api/images/{generation_id}/download">ダウンロード</button>
+                  </div>
+        '404':
+          description: 生成リクエストが見つからない
+
+  /api/images/{generation_id}:
+    get:
+      summary: 生成された画像を取得
+      operationId: getImage
+      tags:
+        - Generation
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PNG画像
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 画像が見つからない
+
+  /api/images/{generation_id}/download:
+    get:
+      summary: 画像をダウンロード（Content-Disposition: attachment）
+      operationId: downloadImage
+      tags:
+        - Generation
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PNG画像（ダウンロード）
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: attachment; filename="manganize_20251227_143025_Transformer解説.png"
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 画像が見つからない
+
+  /api/images/{generation_id}/thumbnail:
+    get:
+      summary: サムネイル画像を取得（200x200）
+      operationId: getThumbnail
+      tags:
+        - Generation
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PNG画像（サムネイル）
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 画像が見つからない
+
+  /api/upload:
+    post:
+      summary: ファイルアップロード（トピック入力用）
+      operationId: uploadFile
+      tags:
+        - Generation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: アップロードするファイル（.txt, .pdf, .md）
+              required:
+                - file
+      responses:
+        '200':
+          description: ファイル内容を抽出成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    description: 抽出されたテキスト内容
+        '400':
+          description: ファイル形式エラーまたはサイズ超過
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: エラーメッセージ
+      required:
+        - detail

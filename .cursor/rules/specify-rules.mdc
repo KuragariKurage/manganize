@@ -1,0 +1,29 @@
+# manganize Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-12-27
+
+## Active Technologies
+
+- Python 3.13+ + FastAPI ^0.115, Jinja2 ^3.1, HTMX ^2.0, TailwindCSS ^3.4, sse-starlette ^2.0 (001-web-app)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] pytest [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] ruff check .
+
+## Code Style
+
+Python 3.13+: Follow standard conventions
+
+## Recent Changes
+
+- 001-web-app: Added Python 3.13+ + FastAPI ^0.115, Jinja2 ^3.1, HTMX ^2.0, TailwindCSS ^3.4, sse-starlette ^2.0
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

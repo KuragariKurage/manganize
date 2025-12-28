@@ -1,0 +1,59 @@
+<!-- Result display for generated manga image -->
+<div id="result-container" class="mb-6">
+    <div class="card">
+        {% if generation %}
+            {% if generation.status == 'completed' %}
+                <!-- Success -->
+                <h3 class="text-lg font-semibold mb-4 text-green-600">生成完了！</h3>
+
+                <!-- Generated title -->
+                <h4 class="text-xl font-bold text-gray-800 mb-4">{{ generation.generated_title }}</h4>
+
+                <!-- Generated image -->
+                <div class="mb-4">
+                    <img src="/api/images/{{ generation.id }}"
+                         alt="{{ generation.generated_title }}"
+                         class="w-full rounded-lg shadow-md cursor-pointer hover:shadow-xl transition"
+                         onclick="openImageModal('{{ generation.id }}')"
+                    />
+                </div>
+
+                <!-- Action buttons -->
+                <div class="flex gap-4 justify-center">
+                    <a href="/api/images/{{ generation.id }}/download"
+                       class="btn-primary"
+                       download>
+                        ダウンロード
+                    </a>
+                    <button onclick="resetGeneration()"
+                            class="btn-secondary">
+                        新しく生成
+                    </button>
+                </div>
+
+            {% elif generation.status == 'error' %}
+                <!-- Error -->
+                <h3 class="text-lg font-semibold mb-4 text-red-600">エラーが発生しました</h3>
+
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <p class="text-red-800">
+                        {{ generation.error_message or '不明なエラーが発生しました' }}
+                    </p>
+                </div>
+
+                <!-- Retry button -->
+                <div class="flex justify-center">
+                    <button onclick="resetGeneration()"
+                            class="btn-primary">
+                        再試行
+                    </button>
+                </div>
+            {% else %}
+                <!-- Still processing -->
+                <p class="text-gray-600">生成処理中...</p>
+            {% endif %}
+        {% else %}
+            <p class="text-gray-600">生成結果が見つかりません。</p>
+        {% endif %}
+    </div>
+</div>
