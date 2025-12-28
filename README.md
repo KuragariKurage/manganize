@@ -70,6 +70,24 @@ manganize/
 
 ## Web アプリケーション
 
+### 初回セットアップ
+
+```bash
+# データベースのマイグレーション
+uv run alembic upgrade head
+
+# デフォルトキャラクターのシード
+uv run python -m web.models.seed
+
+# TailwindCSS CLI のインストール（TailwindCSS 4.x）
+npm install
+
+# TailwindCSS のビルド（初回のみ）
+npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css
+```
+
+### 開発サーバーの起動
+
 ```bash
 # 開発サーバー起動（Hot Reload 有効）
 task dev
@@ -77,6 +95,15 @@ task dev
 uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
 
 # ブラウザで http://127.0.0.1:8000 にアクセス
+```
+
+### TailwindCSS の開発
+
+スタイルを編集する場合は、別のターミナルで TailwindCSS を watch モードで起動してください：
+
+```bash
+# TailwindCSS を watch モードで起動（リアルタイム再ビルド）
+npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --watch
 ```
 
 ## 開発

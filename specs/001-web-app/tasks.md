@@ -28,8 +28,8 @@
 - [X] T004 [P] Create web/config.py with environment variable management
 - [X] T005 [P] Setup .env file with GOOGLE_API_KEY and DATABASE_URL
 - [X] T006 [P] Create tailwind.config.js with content paths
-- [X] T007 [P] Create web/static/css/input.css for TailwindCSS
-- [X] T008 Build TailwindCSS output.css using npx tailwindcss command
+- [X] T007 [P] Create web/static/css/input.css for TailwindCSS (using @import "tailwindcss" for v4.x)
+- [X] T008 Build TailwindCSS output.css using @tailwindcss/cli (npm install -D @tailwindcss/cli@next; npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css)
 
 ---
 
@@ -186,11 +186,13 @@
 - [X] T085 Code quality: run `ruff check web/` and fix all warnings
 - [X] T086 Type checking: run `ty check web/` and fix all errors
 - [X] T087 Verify all functions have type hints (Constitution compliance)
-- [ ] T088 Update docs/specs/001-web-app/design.md if implementation differs from plan
-- [ ] T089 Update docs/specs/001-web-app/requirements.md if requirements changed
-- [ ] T090 Create docs/wiki/tutorials/first-manga.md (Divio: Tutorial)
-- [ ] T091 Create docs/wiki/how-to/deploy-production.md (Divio: How-to)
-- [ ] T092 Create docs/wiki/reference/api-endpoints.md (Divio: Reference)
+- [X] T088 Update docs/specs/001-web-app/plan.md and spec.md - confirmed in sync with implementation
+- [X] T089 Requirements documented in spec.md - confirmed accurate
+- [X] T090 Create docs/wiki/tutorials/first-manga.md (Divio: Tutorial)
+- [X] T091 Create docs/wiki/how-to/deploy-production.md (Divio: How-to)
+- [X] T092 docs/wiki/reference/api-endpoints.md already exists and is complete
+- [X] T093 Update README.md with TailwindCSS setup instructions
+- [X] T094 Update AGENTS.md with frontend development workflow
 
 ---
 
@@ -296,16 +298,16 @@ With multiple developers:
 
 ## Implementation Status
 
-**最終更新日**: 2025-12-28
+**最終更新日**: 2025-12-29
 
-**完了タスク数**: 91/92 (98.9%)
+**完了タスク数**: 96/96 (100%) 🎉
 - Phase 1: Setup (8/8) ✅
 - Phase 2: Foundational (21/21) ✅ (Repository Pattern含む)
 - Phase 3: User Story 1 (15/15) ✅ - MVP 完了
 - Phase 4: User Story 2 (6/6) ✅ - 画像表示・ダウンロード完了
 - Phase 5: User Story 3 (15/15) ✅ - キャラクターカスタマイズ完了
 - Phase 6: User Story 4 (12/12) ✅ - 生成履歴の管理完了
-- Phase 7: Polish (14/19) 🚧 - ファイルアップロード、レスポンシブデザイン、コード品質完了
+- Phase 7: Polish (19/19) ✅ - 全機能完成、ドキュメント完備
 
 **Phase 5 実装内容**:
 - T047: Character schemas (CharacterCreate/Update/Response) - SpeechStyle 入れ子モデル
@@ -360,5 +362,13 @@ With multiple developers:
   - ty check web/ (All checks passed)
   - 全関数に型ヒント完備
 
-**次フェーズ優先事項**:
-1. Phase 7 残タスク: ドキュメント作成（T088-T092）
+**Phase 7 実装詳細（完了）**:
+- T088-T089: plan.md と spec.md を確認、実装と同期が取れていることを確認
+- T090: docs/wiki/tutorials/first-manga.md を作成 - 初心者向けチュートリアル
+- T091: docs/wiki/how-to/deploy-production.md を作成 - 本番環境デプロイガイド（TailwindCSS 4.x 対応）
+- T092: docs/wiki/reference/api-endpoints.md は既に完成済み
+- T093-T094: README.md と AGENTS.md に TailwindCSS + フロントエンド開発情報を追加
+- T095: TailwindCSS 4.x 対応のためドキュメント修正（@tailwindcss/cli 使用）
+
+**プロジェクト完了** 🎉:
+すべてのユーザーストーリー（US1-US4）が実装され、コード品質チェックとドキュメント作成も完了しました。
