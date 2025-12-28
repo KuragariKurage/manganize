@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.middleware.cors import CORSMiddleware
 
-from web.api import character, generation
+from web.api import character, generation, history
 from web.config import settings
 from web.models.database import init_db
 from web.templates import templates
@@ -62,6 +62,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # API routers
 app.include_router(generation.router, prefix="/api", tags=["generation"])
 app.include_router(character.router, prefix="/api", tags=["character"])
+app.include_router(history.router, prefix="/api", tags=["history"])
 
 
 # Root route
@@ -81,6 +82,16 @@ async def character_page(request: Request):
     return templates.TemplateResponse(
         "character.html",
         {"request": request, "title": "キャラクター管理 - Manganize"},
+    )
+
+
+# History page
+@app.get("/history")
+async def history_page(request: Request):
+    """Generation history page"""
+    return templates.TemplateResponse(
+        "history.html",
+        {"request": request, "title": "生成履歴 - Manganize"},
     )
 
 

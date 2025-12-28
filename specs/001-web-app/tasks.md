@@ -151,18 +151,18 @@
 
 ### Implementation for User Story 4
 
-- [ ] T062 [P] [US4] Create web/templates/history.html for history list page
-- [ ] T063 [P] [US4] Create web/templates/partials/history_list.html for HTMX infinite scroll
-- [ ] T064 [US4] Create web/services/history.py with list, get, delete operations
-- [ ] T065 [US4] Create web/api/history.py with GET /api/history endpoint (HTML partial response)
-- [ ] T066 [US4] Implement pagination logic with page and limit query parameters in web/api/history.py
-- [ ] T067 [US4] Implement GET /api/history/{id} endpoint (JSON response) in web/api/history.py
-- [ ] T068 [US4] Implement DELETE /api/history/{id} endpoint (empty HTML response) in web/api/history.py
-- [ ] T069 [US4] Add GET /history route in web/main.py to render history.html template
-- [ ] T070 [US4] Implement infinite scroll with hx-trigger="revealed" in web/templates/partials/history_list.html
-- [ ] T071 [US4] Display thumbnail, generated_title, and created_at in history items
-- [ ] T072 [US4] Add confirmation dialog before delete using Alpine.js in web/templates/partials/history_list.html
-- [ ] T073 [US4] Sort history by created_at DESC using SQLAlchemy query in web/services/history.py
+- [X] T062 [P] [US4] Create web/templates/history.html for history list page
+- [X] T063 [P] [US4] Create web/templates/partials/history_list.html for HTMX infinite scroll
+- [X] T064 [US4] Create web/services/history.py with list, get, delete operations
+- [X] T065 [US4] Create web/api/history.py with GET /api/history endpoint (HTML partial response)
+- [X] T066 [US4] Implement pagination logic with page and limit query parameters in web/api/history.py
+- [X] T067 [US4] Implement GET /api/history/{id} endpoint (JSON response) in web/api/history.py
+- [X] T068 [US4] Implement DELETE /api/history/{id} endpoint (empty HTML response) in web/api/history.py
+- [X] T069 [US4] Add GET /history route in web/main.py to render history.html template
+- [X] T070 [US4] Implement infinite scroll with hx-trigger="revealed" in web/templates/partials/history_list.html
+- [X] T071 [US4] Display thumbnail, generated_title, and created_at in history items
+- [X] T072 [US4] Add confirmation dialog before delete using Alpine.js in web/templates/partials/history_list.html
+- [X] T073 [US4] Sort history by created_at DESC using SQLAlchemy query in web/services/history.py
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -298,12 +298,13 @@ With multiple developers:
 
 **最終更新日**: 2025-12-28
 
-**完了タスク数**: 65/92 (70.7%)
+**完了タスク数**: 77/92 (83.7%)
 - Phase 1: Setup (8/8) ✅
 - Phase 2: Foundational (21/21) ✅ (Repository Pattern含む)
 - Phase 3: User Story 1 (15/15) ✅ - MVP 完了
 - Phase 4: User Story 2 (6/6) ✅ - 画像表示・ダウンロード完了
 - Phase 5: User Story 3 (15/15) ✅ - キャラクターカスタマイズ完了
+- Phase 6: User Story 4 (12/12) ✅ - 生成履歴の管理完了
 
 **Phase 5 実装内容**:
 - T047: Character schemas (CharacterCreate/Update/Response) - SpeechStyle 入れ子モデル
@@ -311,6 +312,13 @@ With multiple developers:
 - T051-056: Character API endpoints - リスト、取得、作成、更新、削除、画像（プレースホルダー）
 - T048-049+057: キャラクターページ - 一覧表示、作成・編集フォーム、HTMX による動的更新
 - T059-061: メインページ統合 - ドロップダウン動的生成、デフォルトキャラクター選択
+
+**Phase 6 実装内容**:
+- T064: HistoryService - 履歴の取得、削除、ページネーション
+- T065-068: History API endpoints - リスト（HTML partial）、詳細（JSON）、削除
+- T062-063: 履歴ページ - history.html + history_list.html partial
+- T070-073: 無限スクロール（hx-trigger="revealed"）、サムネイル表示、削除確認ダイアログ（Alpine.js）
+- GenerationRepository 拡張: list_history() メソッド追加（ページネーション、ソート、フィルタリング）
 
 **Phase 4 実装内容**:
 - T041: ダウンロードエンドポイント（`/api/images/{id}/download`）
@@ -334,6 +342,4 @@ With multiple developers:
 - ダウンロードボタン UI（Phase 4 でバックエンド実装）
 
 **次フェーズ優先事項**:
-1. Phase 5 (User Story 3): キャラクターカスタマイズ - Repository Pattern を活用
-2. Phase 6 (User Story 4): 生成履歴の管理 - サムネイル表示
-3. Phase 7: Polish & Cross-Cutting Concerns
+1. Phase 7: Polish & Cross-Cutting Concerns - ファイルアップロード、レスポンシブデザイン、コード品質

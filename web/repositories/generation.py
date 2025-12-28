@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from web.models.generation import GenerationHistory, GenerationStatusEnum
@@ -82,3 +83,63 @@ class GenerationRepository(BaseRepository[GenerationHistory]):
             generation.status = GenerationStatusEnum.ERROR
             generation.error_message = error_message
             generation.completed_at = datetime.now(timezone.utc)
+
+    async def list_history(
+        self,
+        page: int = 1,
+        limit: int = 10,
+        status_filter: GenerationStatusEnum | None = None,
+    ) -> tuple[list[GenerationHistory], int]:
+        """
+        List generation history with pagination and optional filtering.
+
+        Args:
+            page: Page number (1-indexed)
+            limit: Number of items per page
+            status_filter: Optional status to filter by
+
+        Returns:
+            Tuple of (list of generations, total count)
+        """
+        # Build base query
+        query = select(GenerationHistory)
+
+        # Apply status filter if provided
+        if status_filter:
+            query = query.where(GenerationHistory.status == status_filter)
+
+        # Order by created_at DESC (newest first)
+        query = query.order_by(GenerationHistory.created_at.desc())
+
+        # Get total count
+        count_query = select(GenerationHistory)
+        if status_filter:
+            count_query = count_query.where(GenerationHistory.status == status_filter)
+        count_result = await self._session.execute(count_query)
+        total_count = len(list(count_result.scalars().all()))
+
+        # Apply pagination
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
+
+        # Execute query
+        result = await self._session.execute(query)
+        generations = list(result.scalars().all())
+
+        return generations, total_count
+
+    async def delete_by_id(self, generation_id: str) -> bool:
+        """
+        Delete generation by ID.
+
+        Args:
+            generation_id: UUID of the generation to delete
+
+        Returns:
+            True if deleted, False if not found
+        """
+        generation = await self.get_by_id(generation_id)
+        if generation:
+            await self.delete(generation)
+            return True
+        return False
