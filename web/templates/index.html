@@ -17,7 +17,8 @@
               hx-post="/api/generate"
               hx-target="#content-area"
               hx-swap="innerHTML"
-              @htmx:before-request.self="isGenerating = true">
+              @htmx:before-request.self="isGenerating = true"
+              @reset-generation.window="isGenerating = false">
 
             <!-- Character selection -->
             <div class="mb-4">

@@ -25,10 +25,23 @@
                        download>
                         ダウンロード
                     </a>
-                    <button onclick="resetGeneration()"
-                            class="btn-secondary">
-                        新しく生成
-                    </button>
+                <button onclick="resetGeneration()"
+                        class="btn-secondary">
+                    新しく生成
+                </button>
+
+<script>
+function resetGeneration() {
+    // Clear content area
+    const contentArea = document.getElementById('content-area');
+    if (contentArea) {
+        contentArea.innerHTML = '';
+    }
+
+    // Dispatch custom event to reset Alpine.js state
+    window.dispatchEvent(new CustomEvent('reset-generation'));
+}
+</script>
                 </div>
 
             {% elif generation.status == 'error' %}
