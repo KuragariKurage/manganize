@@ -31,7 +31,7 @@
             <img src="/api/images/{{ generation.id }}/thumbnail"
                  alt="{{ generation.generated_title }}"
                  class="w-32 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                 @click="$dispatch('open-modal', { imageUrl: '/api/images/{{ generation.id }}' })">
+                 @click="$dispatch('open-modal', { imageId: '{{ generation.id }}' })">
             {% else %}
             <div class="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
                 {% if generation.status.value == 'error' %}
