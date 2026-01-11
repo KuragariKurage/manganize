@@ -260,6 +260,9 @@
         if (contentArea) {
             contentArea.innerHTML = '';
         }
+
+        // Dispatch custom event to reset Alpine.js state
+        window.dispatchEvent(new CustomEvent('reset-generation'));
     }
 
     // Load characters for dropdown

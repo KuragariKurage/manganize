@@ -74,13 +74,11 @@
                     isCompleted = true;
                     eventSource.close();
 
-                    setTimeout(() => {
-                        // Use HTMX to load the result
-                        htmx.ajax('GET', '/api/generate/' + generationId + '/result', {
-                            target: '#content-area',
-                            swap: 'innerHTML'
-                        });
-                    }, 1000);
+                    // Use HTMX to load the result immediately
+                    htmx.ajax('GET', '/api/generate/' + generationId + '/result', {
+                        target: '#content-area',
+                        swap: 'innerHTML'
+                    });
                 }
             } catch (error) {
                 console.error('Error parsing SSE data:', error);
