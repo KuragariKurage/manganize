@@ -78,10 +78,10 @@ requirements.md では以下の EARS（Easy Approach to Requirements Syntax）�
 **重要**: このプロジェクトは TailwindCSS 4.x を使用しています（`@import "tailwindcss";` 構文）。
 
 1. **初回セットアップ**: `npm install`
-2. **スタイルの編集**: `web/static/css/input.css` でカスタムスタイルを定義
-3. **watch モード起動**: `npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --watch`
-4. **ビルド確認**: `web/static/css/output.css` が自動更新されることを確認
-5. **本番ビルド**: `npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --minify`
+2. **スタイルの編集**: `apps/web/manganize_web/static/css/input.css` でカスタムスタイルを定義
+3. **watch モード起動**: `npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch`
+4. **ビルド確認**: `apps/web/manganize_web/static/css/output.css` が自動更新されることを確認
+5. **本番ビルド**: `npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --minify`
 
 ### HTMX の使い方
 
@@ -100,7 +100,7 @@ requirements.md では以下の EARS（Easy Approach to Requirements Syntax）�
 
 - **進捗通知**: `EventSource` API でリアルタイム進捗更新
 - **再接続**: 自動再接続ロジックとエラーハンドリング
-- **実装場所**: `web/templates/partials/progress.html`
+- **実装場所**: `apps/web/manganize_web/templates/partials/progress.html`
 
 ## コーディング規約
 
@@ -165,21 +165,50 @@ Angular Convention に従う：
 ## ディレクトリ構成
 
 ```
-manganize/
-├── AGENTS.md           # このファイル
+manganize/                      # Workspace ルート
+├── AGENTS.md                   # このファイル
+├── pyproject.toml              # Workspace 設定
+├── uv.lock                     # 統合ロックファイル
+├── main.py                     # CLI エントリーポイント
+├── Taskfile.yml                # タスクランナー定義
+├── alembic/                    # DBマイグレーション
+│   ├── env.py
+│   └── versions/
+├── alembic.ini
+├── characters/                 # キャラクター設定ファイル
 ├── docs/
-│   ├── specs/          # Spec ファイル（機能ごと）
-│   └── wiki/           # 開発者向け技術ドキュメント（Divio システム）
-│       ├── tutorials/      # チュートリアル（学習指向）
-│       ├── how-to/         # ハウツーガイド（問題解決指向）
-│       ├── reference/      # リファレンス（情報指向）
-│       └── explanation/    # 解説（理解指向）
-├── manganize/          # メインパッケージ
-│   ├── chain.py        # LangGraph エージェント定義
-│   ├── prompts.py      # プロンプトテンプレート
-│   └── tools.py        # エージェントが使用するツール
-├── pyproject.toml      # プロジェクト設定
-└── uv.lock             # 依存関係ロック
+│   ├── specs/                  # Spec ファイル（機能ごと）
+│   └── wiki/                   # 開発者向け技術ドキュメント（Divio システム）
+│       ├── tutorials/              # チュートリアル（学習指向）
+│       ├── how-to/                 # ハウツーガイド（問題解決指向）
+│       ├── reference/              # リファレンス（情報指向）
+│       └── explanation/            # 解説（理解指向）
+├── packages/
+│   └── core/                   # コアエージェントパッケージ
+│       ├── pyproject.toml      # manganize-core
+│       ├── README.md
+│       └── manganize_core/
+│           ├── agents.py       # LangGraph エージェント定義
+│           ├── prompts.py      # プロンプトテンプレート
+│           ├── tools.py        # エージェントが使用するツール
+│           ├── character.py    # キャラクター基底クラス
+│           └── app.py          # アプリケーション主体
+└── apps/
+    └── web/                    # Web アプリケーションパッケージ
+        ├── pyproject.toml      # manganize-web
+        ├── README.md
+        └── manganize_web/
+            ├── main.py         # FastAPI エントリーポイント
+            ├── config.py       # 設定管理
+            ├── templates.py    # Jinja2 テンプレート設定
+            ├── api/            # API エンドポイント
+            ├── models/         # SQLAlchemy モデル
+            ├── repositories/   # データアクセス層
+            ├── schemas/        # Pydantic スキーマ
+            ├── services/       # ビジネスロジック
+            ├── utils/          # ユーティリティ
+            ├── templates/      # Jinja2 テンプレート
+            └── static/         # CSS/JS
 ```
 
 ## 注意事項

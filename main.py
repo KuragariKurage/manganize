@@ -6,10 +6,9 @@ from pathlib import Path
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
+from manganize_core.agents import ManganizeAgent
+from manganize_core.character import BaseCharacter, KurageChan
 from PIL import Image
-
-from manganize.agents import ManganizeAgent
-from manganize.character import BaseCharacter, KurageChan
 
 
 def local_graph(

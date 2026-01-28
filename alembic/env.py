@@ -3,19 +3,18 @@
 import asyncio
 from logging.config import fileConfig
 
+# Import models and config
+from manganize_web.config import settings
+
+# Import all models to ensure they're registered with Base
+from manganize_web.models.character import Character  # noqa: F401
+from manganize_web.models.database import Base
+from manganize_web.models.generation import GenerationHistory  # noqa: F401
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
-# Import models and config
-from web.config import settings
-from web.models.database import Base
-
-# Import all models to ensure they're registered with Base
-from web.models.character import Character  # noqa: F401
-from web.models.generation import GenerationHistory  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
