@@ -7,7 +7,11 @@
 ```bash
 git clone https://github.com/atsu/manganize.git
 cd manganize
+
+# すべての workspace パッケージをインストール
 uv sync
+
+# Playwright のインストール
 uv run playwright install chromium
 
 # API キー取得: https://aistudio.google.com/app/apikey
@@ -54,18 +58,39 @@ graph TB
 
 ## プロジェクト構成
 
+このプロジェクトは **uv workspace** で管理されているモノレポ構成です：
+
 ```
-manganize/
-├── manganize/
-│   ├── agents.py       # LangGraph エージェント定義
-│   ├── tools.py        # Web取得・画像生成ツール
-│   └── prompts.py      # システムプロンプト
-├── assets/             # キャラクター参照画像
+manganize/                      # Workspace ルート
+├── pyproject.toml              # Workspace 設定
+├── packages/
+│   └── core/                   # manganize-core パッケージ
+│       ├── pyproject.toml
+│       └── manganize_core/
+│           ├── agents.py       # LangGraph エージェント定義
+│           ├── tools.py        # Web取得・画像生成ツール
+│           ├── prompts.py      # システムプロンプト
+│           └── character.py    # キャラクター基底クラス
+├── apps/
+│   └── web/                    # manganize-web パッケージ
+│       ├── pyproject.toml
+│       └── manganize_web/
+│           ├── main.py         # FastAPI エントリーポイント
+│           ├── api/            # API エンドポイント
+│           ├── models/         # データモデル
+│           ├── repositories/   # データアクセス層
+│           ├── schemas/        # Pydantic スキーマ
+│           ├── services/       # ビジネスロジック
+│           ├── utils/          # ユーティリティ
+│           ├── templates/      # Jinja2 テンプレート
+│           └── static/         # CSS/JS
+├── alembic/                    # DBマイグレーション
+├── characters/                 # キャラクター設定ファイル
 ├── docs/
-│   ├── specs/          # 機能仕様（EARS記法）
-│   └── wiki/           # 技術ドキュメント（Divio分類）
-├── main.py             # CLI エントリーポイント
-└── AGENTS.md           # エージェント向けガイド
+│   ├── specs/                  # 機能仕様（EARS記法）
+│   └── wiki/                   # 技術ドキュメント（Divio分類）
+├── main.py                     # CLI エントリーポイント
+└── AGENTS.md                   # エージェント向けガイド
 ```
 
 ## Web アプリケーション
@@ -77,13 +102,13 @@ manganize/
 uv run alembic upgrade head
 
 # デフォルトキャラクターのシード
-uv run python -m web.models.seed
+uv run python -m manganize_web.models.seed
 
 # TailwindCSS CLI のインストール（TailwindCSS 4.x）
 npm install
 
 # TailwindCSS のビルド（初回のみ）
-npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css
+npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css
 ```
 
 ### 開発サーバーの起動
@@ -92,7 +117,7 @@ npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css
 # 開発サーバー起動（Hot Reload 有効）
 task dev
 # または
-uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
+uv run fastapi dev apps/web/manganize_web/main.py --reload-dir apps/web --reload-dir packages/core
 
 # ブラウザで http://127.0.0.1:8000 にアクセス
 ```
@@ -103,7 +128,7 @@ uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
 
 ```bash
 # TailwindCSS を watch モードで起動（リアルタイム再ビルド）
-npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --watch
+npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch
 ```
 
 ## 開発

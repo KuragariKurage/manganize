@@ -31,12 +31,12 @@ tasks:
   dev:fastapi:
     desc: Run the fastapi development server
     cmds:
-      - uv run fastapi dev web/main.py --reload-dir web --reload-dir manganize
+      - uv run fastapi dev packages/web/manganize_web/main.py --reload-dir packages/web --reload-dir packages/core
 
   dev:tailwindcss:
     desc: Run the tailwindcss development server
     cmds:
-      - npx @tailwindcss/cli -i web/static/css/input.css -o web/static/css/output.css --watch
+      - npx @tailwindcss/cli -i packages/web/manganize_web/static/css/input.css -o packages/web/manganize_web/static/css/output.css --watch
 
   dev:
     desc: Run the web application in development mode with hot reload
