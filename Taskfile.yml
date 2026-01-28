@@ -1,48 +1,48 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
 tasks:
-  default:
-    desc: List all tasks
-    cmds:
-      - task --list-all
+    default:
+        desc: List all tasks
+        cmds:
+            - task --list-all
 
-  run:
-    desc: Run the application (CLI agent)
-    cmds:
-      - uv run python main.py {{.CLI_ARGS}}
+    run:
+        desc: Run the application (CLI agent)
+        cmds:
+            - uv run python main.py {{.CLI_ARGS}}
 
-  lint:
-    desc: Run the linter
-    cmds:
-      - uv run ruff check .
+    lint:
+        desc: Run the linter
+        cmds:
+            - uv run ruff check .
 
-  format:
-    desc: Run the formatter
-    cmds:
-      - uv run ruff check --fix .
+    format:
+        desc: Run the formatter
+        cmds:
+            - uv run ruff check --fix .
 
-  typecheck:
-    desc: Run the type checker
-    cmds:
-      - uv run ty check .
+    typecheck:
+        desc: Run the type checker
+        cmds:
+            - uv run ty check .
 
-  dev:fastapi:
-    desc: Run the fastapi development server
-    cmds:
-      - uv run fastapi dev packages/web/manganize_web/main.py --reload-dir packages/web --reload-dir packages/core
+    dev:fastapi:
+        desc: Run the fastapi development server
+        cmds:
+            - uv run fastapi dev apps/web/manganize_web/main.py --reload-dir apps/web --reload-dir packages/core
 
-  dev:tailwindcss:
-    desc: Run the tailwindcss development server
-    cmds:
-      - npx @tailwindcss/cli -i packages/web/manganize_web/static/css/input.css -o packages/web/manganize_web/static/css/output.css --watch
+    dev:tailwindcss:
+        desc: Run the tailwindcss development server
+        cmds:
+            - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch
 
-  dev:
-    desc: Run the web application in development mode with hot reload
-    deps: [dev:fastapi, dev:tailwindcss]
+    dev:
+        desc: Run the web application in development mode with hot reload
+        deps: [dev:fastapi, dev:tailwindcss]
 
-  web:
-    desc: Alias for dev task
-    cmds:
-      - task: dev
+    web:
+        desc: Alias for dev task
+        cmds:
+            - task: dev
