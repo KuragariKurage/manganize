@@ -19,4 +19,3 @@ dev = ["ruff>=0.14.7", "ty>=0.0.7"]
 
 [tool.uv.workspace]
 members = ["packages/*", "apps/*"]
-G
