@@ -96,6 +96,20 @@ async function editCharacter(name) {
         document.getElementById('speech_examples').value = character.speech_style.examples.join('\n');
         document.getElementById('speech_forbidden').value = character.speech_style.forbidden.join('\n');
 
+        // Display image previews if available
+        if (character.reference_images) {
+            if (character.reference_images.portrait) {
+                const portraitPreview = document.getElementById('portrait_preview');
+                portraitPreview.querySelector('img').src = `/api/characters/${name}/image?image_type=portrait&t=${Date.now()}`;
+                portraitPreview.classList.remove('hidden');
+            }
+            if (character.reference_images.full_body) {
+                const fullBodyPreview = document.getElementById('full_body_preview');
+                fullBodyPreview.querySelector('img').src = `/api/characters/${name}/image?image_type=full_body&t=${Date.now()}`;
+                fullBodyPreview.classList.remove('hidden');
+            }
+        }
+
         // Change form method to PUT
         const form = document.getElementById('character-form');
         form.dataset.method = 'PUT';
@@ -140,6 +154,18 @@ function resetForm() {
     document.getElementById('form-title').textContent = '新規キャラクター作成';
     document.getElementById('name').disabled = false;
     document.getElementById('character-form').reset();
+
+    // Hide image previews
+    const portraitPreview = document.getElementById('portrait_preview');
+    const fullBodyPreview = document.getElementById('full_body_preview');
+    if (portraitPreview) {
+        portraitPreview.classList.add('hidden');
+        portraitPreview.querySelector('img').src = '';
+    }
+    if (fullBodyPreview) {
+        fullBodyPreview.classList.add('hidden');
+        fullBodyPreview.querySelector('img').src = '';
+    }
 
     const form = document.getElementById('character-form');
     form.dataset.method = 'POST';

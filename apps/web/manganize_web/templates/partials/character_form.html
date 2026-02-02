@@ -1,73 +1,94 @@
 <!-- Character creation/edit form -->
-<form id="character-form"
-      data-method="POST"
-      data-action="/api/characters">
-
+<form id="character-form" data-method="POST" data-action="/api/characters">
     <!-- Name -->
     <div class="mb-4">
         <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
             名前 (ASCII) <span class="text-red-500">*</span>
         </label>
-        <input type="text"
-               id="name"
-               name="name"
-               class="input-field"
-               required
-               pattern="[a-zA-Z0-9_]+"
-               placeholder="kurage">
-        <p class="text-xs text-gray-500 mt-1">英数字とアンダースコアのみ使用可能</p>
+        <input
+            type="text"
+            id="name"
+            name="name"
+            class="input-field"
+            required
+            pattern="[a-zA-Z0-9_]+"
+            placeholder="kurage"
+        />
+        <p class="text-xs text-gray-500 mt-1">
+            英数字とアンダースコアのみ使用可能
+        </p>
     </div>
 
     <!-- Display Name -->
     <div class="mb-4">
-        <label for="display_name" class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+            for="display_name"
+            class="block text-sm font-medium text-gray-700 mb-2"
+        >
             表示名 <span class="text-red-500">*</span>
         </label>
-        <input type="text"
-               id="display_name"
-               name="display_name"
-               class="input-field"
-               required
-               placeholder="くらがりくらげ">
+        <input
+            type="text"
+            id="display_name"
+            name="display_name"
+            class="input-field"
+            required
+            placeholder="くらがりくらげ"
+        />
     </div>
 
     <!-- Nickname -->
     <div class="mb-4">
-        <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+            for="nickname"
+            class="block text-sm font-medium text-gray-700 mb-2"
+        >
             ニックネーム
         </label>
-        <input type="text"
-               id="nickname"
-               name="nickname"
-               class="input-field"
-               placeholder="くらげちゃん">
+        <input
+            type="text"
+            id="nickname"
+            name="nickname"
+            class="input-field"
+            placeholder="くらげちゃん"
+        />
     </div>
 
     <!-- Attributes -->
     <div class="mb-4">
-        <label for="attributes" class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+            for="attributes"
+            class="block text-sm font-medium text-gray-700 mb-2"
+        >
             属性 <span class="text-red-500">*</span>
         </label>
-        <input type="text"
-               id="attributes"
-               name="attributes"
-               class="input-field"
-               required
-               placeholder="ハイスキルエンジニア, 技術オタク">
+        <input
+            type="text"
+            id="attributes"
+            name="attributes"
+            class="input-field"
+            required
+            placeholder="ハイスキルエンジニア, 技術オタク"
+        />
         <p class="text-xs text-gray-500 mt-1">カンマ区切りで複数指定</p>
     </div>
 
     <!-- Personality -->
     <div class="mb-4">
-        <label for="personality" class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+            for="personality"
+            class="block text-sm font-medium text-gray-700 mb-2"
+        >
             性格 <span class="text-red-500">*</span>
         </label>
-        <textarea id="personality"
-                  name="personality"
-                  rows="3"
-                  class="textarea-field"
-                  required
-                  placeholder="基本はクールでダウナーだが、技術的な話題には目を輝かせます。"></textarea>
+        <textarea
+            id="personality"
+            name="personality"
+            rows="3"
+            class="textarea-field"
+            required
+            placeholder="基本はクールでダウナーだが、技術的な話題には目を輝かせます。"
+        ></textarea>
     </div>
 
     <!-- Speech Style Section -->
@@ -76,62 +97,139 @@
 
         <!-- Tone -->
         <div class="mb-4">
-            <label for="speech_tone" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+                for="speech_tone"
+                class="block text-sm font-medium text-gray-700 mb-2"
+            >
                 トーン <span class="text-red-500">*</span>
             </label>
-            <input type="text"
-                   id="speech_tone"
-                   name="speech_tone"
-                   class="input-field"
-                   required
-                   placeholder="声のトーンが低めの、落ち着いた現代の女の子">
+            <input
+                type="text"
+                id="speech_tone"
+                name="speech_tone"
+                class="input-field"
+                required
+                placeholder="声のトーンが低めの、落ち着いた現代の女の子"
+            />
         </div>
 
         <!-- Patterns -->
         <div class="mb-4">
-            <label for="speech_patterns" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+                for="speech_patterns"
+                class="block text-sm font-medium text-gray-700 mb-2"
+            >
                 口癖パターン
             </label>
-            <input type="text"
-                   id="speech_patterns"
-                   name="speech_patterns"
-                   class="input-field"
-                   placeholder="〜かも, 〜だね, ……なるほど">
+            <input
+                type="text"
+                id="speech_patterns"
+                name="speech_patterns"
+                class="input-field"
+                placeholder="〜かも, 〜だね, ……なるほど"
+            />
             <p class="text-xs text-gray-500 mt-1">カンマ区切りで複数指定</p>
         </div>
 
         <!-- Examples -->
         <div class="mb-4">
-            <label for="speech_examples" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+                for="speech_examples"
+                class="block text-sm font-medium text-gray-700 mb-2"
+            >
                 例文
             </label>
-            <textarea id="speech_examples"
-                      name="speech_examples"
-                      rows="3"
-                      class="textarea-field"
-                      placeholder="これ、結構面白いかも&#10;なるほどね……&#10;そういうことだったんだ"></textarea>
+            <textarea
+                id="speech_examples"
+                name="speech_examples"
+                rows="3"
+                class="textarea-field"
+                placeholder="これ、結構面白いかも&#10;なるほどね……&#10;そういうことだったんだ"
+            ></textarea>
             <p class="text-xs text-gray-500 mt-1">改行で複数指定</p>
         </div>
 
         <!-- Forbidden -->
         <div class="mb-4">
-            <label for="speech_forbidden" class="block text-sm font-medium text-gray-700 mb-2">
+            <label
+                for="speech_forbidden"
+                class="block text-sm font-medium text-gray-700 mb-2"
+            >
                 禁止パターン
             </label>
-            <textarea id="speech_forbidden"
-                      name="speech_forbidden"
-                      rows="3"
-                      class="textarea-field"
-                      placeholder="「〜だ」「〜である」等の堅苦しい断定&#10;おじさん構文"></textarea>
+            <textarea
+                id="speech_forbidden"
+                name="speech_forbidden"
+                rows="3"
+                class="textarea-field"
+                placeholder="「〜だ」「〜である」等の堅苦しい断定&#10;おじさん構文"
+            ></textarea>
             <p class="text-xs text-gray-500 mt-1">改行で複数指定</p>
+        </div>
+    </div>
+
+    <!-- Reference Images Section -->
+    <div class="border-t border-gray-200 pt-4 mb-4">
+        <h3 class="text-lg font-semibold mb-3">参照画像</h3>
+
+        <!-- Portrait Image -->
+        <div class="mb-4">
+            <label
+                for="portrait_image"
+                class="block text-sm font-medium text-gray-700 mb-2"
+            >
+                顔アップ画像
+            </label>
+            <input
+                type="file"
+                id="portrait_image"
+                name="portrait_image"
+                accept="image/png,image/jpeg"
+                class="input-field"
+            />
+            <p class="text-xs text-gray-500 mt-1">PNG/JPEG、最大5MB</p>
+
+            <!-- Preview (編集時) -->
+            <div id="portrait_preview" class="mt-2 hidden">
+                <img
+                    src=""
+                    alt="Preview"
+                    class="w-32 h-32 object-cover rounded border"
+                />
+            </div>
+        </div>
+
+        <!-- Full Body Image -->
+        <div class="mb-4">
+            <label
+                for="full_body_image"
+                class="block text-sm font-medium text-gray-700 mb-2"
+            >
+                全身画像
+            </label>
+            <input
+                type="file"
+                id="full_body_image"
+                name="full_body_image"
+                accept="image/png,image/jpeg"
+                class="input-field"
+            />
+            <p class="text-xs text-gray-500 mt-1">PNG/JPEG、最大5MB</p>
+
+            <!-- Preview (編集時) -->
+            <div id="full_body_preview" class="mt-2 hidden">
+                <img
+                    src=""
+                    alt="Preview"
+                    class="w-32 h-auto object-cover rounded border"
+                />
+            </div>
         </div>
     </div>
 
     <!-- Submit button -->
     <div class="flex gap-3">
-        <button type="submit" class="btn-primary flex-1">
-            保存
-        </button>
+        <button type="submit" class="btn-primary flex-1">保存</button>
         <button type="button" onclick="resetForm()" class="btn-secondary">
             リセット
         </button>
@@ -139,53 +237,87 @@
 </form>
 
 <script>
-// Handle form submission with JSON conversion
-document.getElementById('character-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
+    // Handle form submission with FormData (multipart/form-data)
+    document
+        .getElementById("character-form")
+        .addEventListener("submit", async function (event) {
+            event.preventDefault();
 
-    const formData = new FormData(event.target);
+            const formData = new FormData(event.target);
 
-    // Convert form data to JSON
-    const data = {
-        name: formData.get('name'),
-        display_name: formData.get('display_name'),
-        nickname: formData.get('nickname') || null,
-        attributes: formData.get('attributes').split(',').map(s => s.trim()).filter(Boolean),
-        personality: formData.get('personality'),
-        speech_style: {
-            tone: formData.get('speech_tone'),
-            patterns: formData.get('speech_patterns') ? formData.get('speech_patterns').split(',').map(s => s.trim()).filter(Boolean) : [],
-            examples: formData.get('speech_examples') ? formData.get('speech_examples').split('\n').map(s => s.trim()).filter(Boolean) : [],
-            forbidden: formData.get('speech_forbidden') ? formData.get('speech_forbidden').split('\n').map(s => s.trim()).filter(Boolean) : []
-        }
-    };
+            // Build speech_style object and convert to JSON string
+            const speechStyle = {
+                tone: formData.get("speech_tone"),
+                patterns: formData.get("speech_patterns")
+                    ? formData
+                          .get("speech_patterns")
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                    : [],
+                examples: formData.get("speech_examples")
+                    ? formData
+                          .get("speech_examples")
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                    : [],
+                forbidden: formData.get("speech_forbidden")
+                    ? formData
+                          .get("speech_forbidden")
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                    : [],
+            };
 
-    // Determine method and URL
-    const form = event.target;
-    const method = form.dataset.method || 'POST';
-    const url = form.dataset.action || '/api/characters';
+            // Create new FormData with proper structure
+            const submitData = new FormData();
+            submitData.append("name", formData.get("name"));
+            submitData.append("display_name", formData.get("display_name"));
+            submitData.append("nickname", formData.get("nickname") || "");
+            submitData.append("attributes", formData.get("attributes"));
+            submitData.append("personality", formData.get("personality"));
+            submitData.append("speech_style", JSON.stringify(speechStyle));
 
-    try {
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+            // Add image files if selected
+            const portraitFile =
+                document.getElementById("portrait_image").files[0];
+            if (portraitFile) {
+                submitData.append("portrait_image", portraitFile);
+            }
+            const fullBodyFile =
+                document.getElementById("full_body_image").files[0];
+            if (fullBodyFile) {
+                submitData.append("full_body_image", fullBodyFile);
+            }
+
+            // Determine method and URL
+            const form = event.target;
+            const method = form.dataset.method || "POST";
+            const url = form.dataset.action || "/api/characters";
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    body: submitData, // Content-Type is automatically set for multipart/form-data
+                });
+
+                if (response.ok) {
+                    resetForm();
+                    // Trigger character list refresh
+                    htmx.trigger("#character-list", "refresh-characters");
+                    showToast("保存しました！", "success");
+                } else {
+                    const error = await response.json();
+                    showToast(
+                        `エラー: ${error.detail || "保存に失敗しました"}`,
+                        "error",
+                    );
+                }
+            } catch (error) {
+                showToast("保存に失敗しました", "error");
+                console.error(error);
+            }
         });
-
-        if (response.ok) {
-            resetForm();
-            // Trigger character list refresh
-            htmx.trigger('#character-list', 'refresh-characters');
-            showToast('保存しました！', 'success');
-        } else {
-            const error = await response.json();
-            showToast(`エラー: ${error.detail || '保存に失敗しました'}`, 'error');
-        }
-    } catch (error) {
-        showToast('保存に失敗しました', 'error');
-        console.error(error);
-    }
-});
 </script>
