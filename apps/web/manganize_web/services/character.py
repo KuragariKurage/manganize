@@ -2,11 +2,13 @@
 
 from datetime import datetime, timezone
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.orm.attributes import flag_modified
 
 from manganize_web.models.character import Character
 from manganize_web.repositories.database_session import DatabaseSession
 from manganize_web.schemas.character import CharacterCreate, CharacterUpdate
+from manganize_web.utils import image_processing
 
 
 class CharacterService:
@@ -131,9 +133,53 @@ class CharacterService:
         await db_session.commit()
         return character
 
+    async def save_character_image(
+        self,
+        name: str,
+        image_type: str,
+        image_file: UploadFile,
+        db_session: DatabaseSession,
+    ) -> Character:
+        """
+        Save character reference image and update database.
+
+        Args:
+            name: Character name
+            image_type: Image type ('portrait' or 'full_body')
+            image_file: Uploaded image file
+            db_session: Database session
+
+        Returns:
+            Updated character
+
+        Raises:
+            HTTPException: If character not found or image save fails
+        """
+        character = await db_session.characters.get_by_name(name)
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+
+        # Save image to disk and get relative path
+        relative_path = await image_processing.save_character_image(
+            name, image_type, image_file
+        )
+
+        # Update reference_images in database
+        if character.reference_images is None:
+            character.reference_images = {}
+
+        character.reference_images[image_type] = relative_path
+        character.updated_at = datetime.now(timezone.utc)
+
+        # Mark reference_images as modified for SQLAlchemy to detect changes
+        flag_modified(character, "reference_images")
+
+        await db_session.commit()
+        return character
+
     async def delete_character(self, name: str, db_session: DatabaseSession) -> None:
         """
-        Delete a character.
+        Delete a character and its reference images.
 
         Args:
             name: Character name
@@ -152,8 +198,12 @@ class CharacterService:
                 detail="Cannot delete default character",
             )
 
+        # Delete from database first
         await db_session.characters.delete(character)
         await db_session.commit()
+
+        # Then delete image files
+        image_processing.delete_character_images(name)
 
 
 # Global instance

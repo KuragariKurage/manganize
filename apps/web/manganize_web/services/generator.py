@@ -3,6 +3,7 @@
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from manganize_web.models.generation import GenerationHistory, GenerationStatusEnum
@@ -97,7 +98,7 @@ class GeneratorService:
             Character instance
         """
         # Lazy import to speed up server startup
-        from manganize_core.character import KurageChan
+        from manganize_core.character import BaseCharacter, KurageChan, SpeechStyle
 
         character = await db_session.characters.get_by_name(character_name)
 
@@ -105,9 +106,26 @@ class GeneratorService:
             # Fallback to default character
             return KurageChan()
 
-        # For now, just return KurageChan
-        # TODO: Create dynamic character from database in Phase 5
-        return KurageChan()
+        # Check if reference images are available
+        if (
+            not character.reference_images
+            or not character.reference_images.get("portrait")
+            or not character.reference_images.get("full_body")
+        ):
+            # If images are missing, fall back to default character
+            # This can happen if character was created but images weren't uploaded
+            return KurageChan()
+
+        # Create dynamic character from database
+        return BaseCharacter(
+            name=character.display_name,
+            nickname=character.nickname or character.display_name,
+            attributes=character.attributes,
+            personality=character.personality,
+            speech_style=SpeechStyle(**character.speech_style),
+            portrait=Path(character.reference_images["portrait"]),
+            full_body=Path(character.reference_images["full_body"]),
+        )
 
     async def generate_manga(
         self,
