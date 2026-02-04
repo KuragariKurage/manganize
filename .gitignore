@@ -295,3 +295,8 @@ web/static/css/output.css
 *.db
 *.db-journal
 alembic/__pycache__/
+
+# characters (except defaults)
+characters/*
+!characters/kurage
+!characters/gpt
