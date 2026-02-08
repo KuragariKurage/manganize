@@ -9,7 +9,12 @@ from PIL import Image
 from sse_starlette.sse import EventSourceResponse
 
 from manganize_web.models.database import get_db_session
+from manganize_web.models.generation import GenerationTypeEnum
 from manganize_web.repositories.database_session import DatabaseSession
+from manganize_web.schemas.generation import (
+    CreateRevisionRequest,
+    RevisionCreateResponse,
+)
 from manganize_web.services.generator import generator_service
 from manganize_web.templates import templates
 from manganize_web.utils.file_processing import extract_text_from_file
@@ -86,6 +91,58 @@ async def create_generation(
     )
 
 
+@router.get("/generate/{generation_id}/progress")
+async def get_generation_progress_partial(
+    request: Request,
+    generation_id: str,
+    db_session: DatabaseSession = Depends(get_db_session),
+):
+    """
+    Get progress indicator partial for a generation request.
+
+    Returns HTML partial with SSE connection bootstrap.
+    """
+    generation = await generator_service.get_generation_by_id(generation_id, db_session)
+    if not generation:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    return templates.TemplateResponse(
+        "partials/progress.html",
+        {
+            "request": request,
+            "generation_id": generation_id,
+        },
+    )
+
+
+@router.post("/generations/{generation_id}/revisions")
+async def create_revision_generation(
+    generation_id: str,
+    payload: CreateRevisionRequest,
+    db_session: DatabaseSession = Depends(get_db_session),
+) -> RevisionCreateResponse:
+    """
+    Create a new revision generation request from an existing generation.
+
+    Args:
+        generation_id: Parent generation ID
+        payload: Revision request payload
+
+    Returns:
+        Revision generation ID
+    """
+    try:
+        revision_generation_id = await generator_service.create_revision_request(
+            parent_generation_id=generation_id,
+            revision_payload=payload.model_dump(mode="json", exclude_none=True),
+            db_session=db_session,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return RevisionCreateResponse(generation_id=revision_generation_id)
+
+
 @router.get("/generate/{generation_id}/stream")
 async def stream_generation_progress(
     generation_id: str,
@@ -108,10 +165,8 @@ async def stream_generation_progress(
 
     async def event_generator():
         """Generate SSE events for progress updates"""
-        async for status in generator_service.generate_manga(
+        async for status in generator_service.generate_for_request(
             generation_id,
-            generation.input_topic,
-            generation.character_name,
             db_session,
         ):
             yield {
@@ -152,6 +207,17 @@ async def get_generation_result(
         {
             "request": request,
             "generation": generation,
+            "status_value": (
+                generation.status.value
+                if hasattr(generation.status, "value")
+                else str(generation.status)
+            ),
+            "generation_type_value": (
+                generation.generation_type.value
+                if hasattr(generation.generation_type, "value")
+                else str(generation.generation_type)
+            ),
+            "is_revision": generation.generation_type == GenerationTypeEnum.REVISION,
         },
     )
 

@@ -4,9 +4,13 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from manganize_web.models.generation import GenerationHistory, GenerationStatusEnum
+from manganize_web.models.generation import (
+    GenerationHistory,
+    GenerationStatusEnum,
+    GenerationTypeEnum,
+)
 from manganize_web.repositories.database_session import DatabaseSession
 from manganize_web.schemas.generation import GenerationStatus
 
@@ -41,7 +45,7 @@ class GeneratorService:
         db_session: DatabaseSession,
     ) -> str:
         """
-        Create a new generation request.
+        Create a new initial generation request.
 
         Args:
             topic: Topic to generate manga about
@@ -59,6 +63,7 @@ class GeneratorService:
             input_topic=topic,
             generated_title="",  # Will be filled after generation
             status=GenerationStatusEnum.PENDING,
+            generation_type=GenerationTypeEnum.INITIAL,
             created_at=datetime.now(timezone.utc),
         )
 
@@ -66,6 +71,46 @@ class GeneratorService:
         await db_session.commit()
 
         return generation_id
+
+    async def create_revision_request(
+        self,
+        parent_generation_id: str,
+        revision_payload: dict[str, Any],
+        db_session: DatabaseSession,
+    ) -> str:
+        """
+        Create a new revision generation request.
+
+        Args:
+            parent_generation_id: Parent generation ID
+            revision_payload: Payload that contains global instruction and edits
+            db_session: Database session with repositories
+
+        Returns:
+            revision_generation_id: UUID of the created revision generation
+
+        Raises:
+            ValueError: If parent generation is not found or not editable
+        """
+        parent_generation = await db_session.generations.get_by_id(parent_generation_id)
+        if not parent_generation:
+            raise ValueError("Parent generation not found")
+
+        if parent_generation.status != GenerationStatusEnum.COMPLETED:
+            raise ValueError("Parent generation is not completed")
+
+        if not parent_generation.image_data:
+            raise ValueError("Parent generation has no image")
+
+        revision_id = str(uuid.uuid4())
+        await db_session.generations.create_revision(
+            parent_generation=parent_generation,
+            revision_generation_id=revision_id,
+            revision_payload=revision_payload,
+        )
+        await db_session.commit()
+
+        return revision_id
 
     async def get_generation_by_id(
         self,
@@ -127,6 +172,38 @@ class GeneratorService:
             full_body=Path(character.reference_images["full_body"]),
         )
 
+    async def generate_for_request(
+        self,
+        generation_id: str,
+        db_session: DatabaseSession,
+    ) -> AsyncGenerator[GenerationStatus, None]:
+        """
+        Generate image by request type (initial or revision).
+
+        Args:
+            generation_id: Generation ID
+            db_session: Database session
+
+        Yields:
+            GenerationStatus updates for SSE
+        """
+        generation = await self.get_generation_by_id(generation_id, db_session)
+        if not generation:
+            raise ValueError("Generation not found")
+
+        if generation.generation_type == GenerationTypeEnum.REVISION:
+            async for status in self.generate_revision(generation_id, db_session):
+                yield status
+            return
+
+        async for status in self.generate_manga(
+            generation_id,
+            generation.input_topic,
+            generation.character_name,
+            db_session,
+        ):
+            yield status
+
     async def generate_manga(
         self,
         generation_id: str,
@@ -135,7 +212,7 @@ class GeneratorService:
         db_session: DatabaseSession,
     ) -> AsyncGenerator[GenerationStatus, None]:
         """
-        Generate manga image with SSE progress updates.
+        Generate initial manga image with SSE progress updates.
 
         Args:
             generation_id: UUID for this generation
@@ -254,6 +331,111 @@ class GeneratorService:
             )
 
             # Save error to database
+            await db_session.generations.update_error(generation_id, error_msg)
+            await db_session.commit()
+
+    async def generate_revision(
+        self,
+        generation_id: str,
+        db_session: DatabaseSession,
+    ) -> AsyncGenerator[GenerationStatus, None]:
+        """
+        Generate revised image from a parent image and revision payload.
+
+        Args:
+            generation_id: Revision generation ID
+            db_session: Database session
+
+        Yields:
+            GenerationStatus updates for SSE
+        """
+        try:
+            generation = await self.get_generation_by_id(generation_id, db_session)
+            if not generation:
+                raise ValueError("Generation not found")
+
+            if generation.generation_type != GenerationTypeEnum.REVISION:
+                raise ValueError("Generation is not a revision request")
+
+            if not generation.parent_generation_id:
+                raise ValueError("Parent generation ID is missing")
+
+            parent_generation = await db_session.generations.get_by_id(
+                generation.parent_generation_id
+            )
+            if not parent_generation:
+                raise ValueError("Parent generation not found")
+
+            if not parent_generation.image_data:
+                raise ValueError("Parent generation has no image")
+
+            # Load character
+            character = await self.get_character_for_generation(
+                generation.character_name,
+                db_session,
+            )
+
+            # Lazy import to speed up server startup
+            from manganize_core.tools import edit_manga_image
+
+            yield GenerationStatus(
+                id=generation_id,
+                status=GenerationStatusEnum.GENERATING,
+                message="修正内容を適用中...",
+                progress=ProgressMilestone.STARTED,
+            )
+
+            image_data = edit_manga_image(
+                content=generation.input_topic,
+                base_image=parent_generation.image_data,
+                revision_payload=generation.revision_payload or {},
+                character=character,
+            )
+
+            if image_data is None:
+                yield GenerationStatus(
+                    id=generation_id,
+                    status=GenerationStatusEnum.ERROR,
+                    message="画像修正に失敗しました",
+                    progress=ProgressMilestone.COMPLETED,
+                )
+                return
+
+            yield GenerationStatus(
+                id=generation_id,
+                status=GenerationStatusEnum.GENERATING,
+                message="保存中...",
+                progress=ProgressMilestone.SAVING,
+            )
+
+            title = generation.generated_title or parent_generation.generated_title
+            if title:
+                if not title.endswith(" (rev)"):
+                    title = f"{title} (rev)"
+            else:
+                title = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+            await db_session.generations.update_with_result(
+                generation_id, image_data, title
+            )
+            await db_session.commit()
+
+            yield GenerationStatus(
+                id=generation_id,
+                status=GenerationStatusEnum.COMPLETED,
+                message="修正完了！",
+                progress=ProgressMilestone.COMPLETED,
+            )
+
+        except Exception as e:
+            error_msg = str(e)
+            yield GenerationStatus(
+                id=generation_id,
+                status=GenerationStatusEnum.ERROR,
+                message=f"エラーが発生しました: {error_msg}",
+                progress=ProgressMilestone.COMPLETED,
+            )
+
             await db_session.generations.update_error(generation_id, error_msg)
             await db_session.commit()
 

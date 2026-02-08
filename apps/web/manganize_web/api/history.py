@@ -64,7 +64,17 @@ async def get_history_detail(
         character_name=generation.character_name,
         input_topic=generation.input_topic,
         generated_title=generation.generated_title,
-        status=generation.status,
+        status=(
+            generation.status.value
+            if hasattr(generation.status, "value")
+            else str(generation.status)
+        ),
+        generation_type=(
+            generation.generation_type.value
+            if hasattr(generation.generation_type, "value")
+            else str(generation.generation_type)
+        ),
+        parent_generation_id=generation.parent_generation_id,
         error_message=generation.error_message,
         created_at=generation.created_at,
         completed_at=generation.completed_at,

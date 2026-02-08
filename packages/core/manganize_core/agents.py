@@ -18,7 +18,11 @@ from manganize_core.prompts import (
     get_researcher_system_prompt,
     get_scenario_writer_system_prompt,
 )
-from manganize_core.tools import generate_manga_image, read_document_file, retrieve_webpage
+from manganize_core.tools import (
+    generate_manga_image,
+    read_document_file,
+    retrieve_webpage,
+)
 
 
 class NodeName(StrEnum):
