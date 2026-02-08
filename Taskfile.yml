@@ -38,6 +38,11 @@ tasks:
         cmds:
             - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch
 
+    build:tailwindcss:
+        desc: Build the tailwindcss output for production
+        cmds:
+            - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --minify
+
     dev:
         desc: Run the web application in development mode with hot reload
         deps: [dev:fastapi, dev:tailwindcss]
