@@ -72,10 +72,12 @@ uv run python -m manganize_web.models.seed
 
 ```bash
 # 開発モード（watch）
-npx @tailwindcss/cli -i packages/web/manganize_web/static/css/input.css -o packages/web/manganize_web/static/css/output.css --watch
+npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch
 
 # 本番ビルド
-npx @tailwindcss/cli -i packages/web/manganize_web/static/css/input.css -o packages/web/manganize_web/static/css/output.css --minify
+npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --minify
+# または
+task build:tailwindcss
 ```
 
 ## 開発サーバーの起動
@@ -84,7 +86,7 @@ npx @tailwindcss/cli -i packages/web/manganize_web/static/css/input.css -o packa
 # ルートディレクトリから実行
 task dev
 # または
-uv run fastapi dev packages/web/manganize_web/main.py --reload-dir packages/web --reload-dir packages/core
+uv run fastapi dev apps/web/manganize_web/main.py --reload-dir apps/web --reload-dir packages/core
 ```
 
 http://127.0.0.1:8000 にアクセス

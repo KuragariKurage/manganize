@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./packages/web/manganize_web/templates/**/*.html",
-    "./packages/web/manganize_web/static/**/*.js",
+    "./apps/web/manganize_web/templates/**/*.html",
+    "./apps/web/manganize_web/static/**/*.js",
   ],
   theme: {
     extend: {

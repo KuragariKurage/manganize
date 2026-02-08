@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../..");
 
 /* Windows XP (Luna/Blue) Theme Variables */
 :root {
