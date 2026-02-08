@@ -291,7 +291,7 @@ output/
 
 # Web application specific
 node_modules/
-web/static/css/output.css
+apps/web/manganize_web/static/css/output.css
 *.db
 *.db-journal
 alembic/__pycache__/
