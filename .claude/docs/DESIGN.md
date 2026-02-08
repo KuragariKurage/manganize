@@ -25,7 +25,7 @@ Manga revision UX is being upgraded to improve annotation visibility, reduce scr
 
 ### Key Decisions
 
-- Orange is the canonical marker color for rectangles, coordinate hints, and index badges.
+- Orange is the canonical marker color for rectangles and index badges.
 - Target indices are rendered as orange circular badges with white text and larger sizing.
 - Selecting a region immediately opens inline input near that region.
 - Only one tooltip can be open at a time; switching targets closes the previous tooltip.
@@ -49,3 +49,4 @@ Manga revision UX is being upgraded to improve annotation visibility, reduce scr
 
 - 2026-02-08: Recorded revision UX enhancement decisions (orange markers, inline tooltip input, dedicated comparison workspace).
 - 2026-02-09: Finalized tooltip-singleton behavior, unsaved-switch confirmation, persistent edit summary panel, and mobile bottom-panel fallback.
+- 2026-02-09: Removed coordinate text from canvas UI; keep marker outlines and index badges only.

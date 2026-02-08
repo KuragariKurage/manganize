@@ -500,13 +500,6 @@
         return { x: b.x + 14, y: b.y + 14 };
     }
 
-    function getCoordLabel(edit) {
-        if (edit.target.kind === 'point') {
-            return `(${edit.target.x.toFixed(2)}, ${edit.target.y.toFixed(2)})`;
-        }
-        return `(${edit.target.x.toFixed(2)}, ${edit.target.y.toFixed(2)}, ${edit.target.w.toFixed(2)}, ${edit.target.h.toFixed(2)})`;
-    }
-
     function drawBadge(x, y, number) {
         ctx.beginPath();
         ctx.fillStyle = markerColor;
@@ -538,24 +531,12 @@
 
                 const badge = getBadgeCenter(edit);
                 drawBadge(badge.x, badge.y, index + 1);
-
-                ctx.font = '600 11px sans-serif';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillStyle = markerColor;
-                ctx.fillText(getCoordLabel(edit), p.x + 12, p.y + 10);
             } else {
                 const b = denormalizeBox(edit.target);
                 ctx.strokeRect(b.x, b.y, b.w, b.h);
 
                 const badge = getBadgeCenter(edit);
                 drawBadge(badge.x, badge.y, index + 1);
-
-                ctx.font = '600 11px sans-serif';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillStyle = markerColor;
-                ctx.fillText(getCoordLabel(edit), b.x + 4, Math.min(elements.canvas.height - 14, b.y + b.h + 4));
             }
         });
 
