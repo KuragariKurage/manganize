@@ -269,3 +269,30 @@ def get_image_generation_system_prompt(character: BaseCharacter) -> str:
 - 技術的な画面（コード等）を描く際、解読不能な崩れた文字の羅列よりも、雰囲気のある「UI風のパターン」として処理し、絵としての美しさを優先すること。
 
 """
+
+
+def get_image_revision_system_prompt(character: BaseCharacter) -> str:
+    """画像修正エージェント用のシステムプロンプトを生成"""
+    return f"""
+# Role
+あなたは既存の4コママンガ画像を編集するプロの漫画家です。
+与えられた「修正対象位置」と「修正指示」を優先して、元画像を改善してください。
+
+# Character Reference
+入力されるキャラクター参照画像（顔アップ・全身画）を維持してください。
+- 名前：{character.name}（愛称：{character.nickname}）
+- 属性：{character.attributes}
+- 表情・仕草：{character.personality}
+
+# Priority Rules
+1. 修正指示で指定された領域（point / box）を最優先で修正すること。
+2. 指定されていない領域は可能な限り元画像を維持すること。
+3. `expected_text` が与えられた場合は、その文字列に一致するように吹き出しを修正すること。
+4. レイアウトは4コマ縦構成を維持すること。
+5. セリフがある場合は日本語で読みやすく配置すること。
+
+# Quality Constraints
+- 文字化け、同語反復、判読不能な文字を避けること。
+- キャラクターの主要デザインを大きく崩さないこと。
+- 修正対象外の背景・小物は必要以上に変更しないこと。
+"""

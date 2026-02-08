@@ -2,12 +2,20 @@
 
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import Index, LargeBinary, String, Text
+from sqlalchemy import JSON, ForeignKey, Index, LargeBinary, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from manganize_web.models.database import Base
+
+
+class GenerationTypeEnum(str, Enum):
+    """Generation type for initial image or revision image"""
+
+    INITIAL = "initial"
+    REVISION = "revision"
 
 
 class GenerationStatusEnum(str, Enum):
@@ -41,6 +49,17 @@ class GenerationHistory(Base):
     # Generation outputs
     generated_title: Mapped[str] = mapped_column(String(100), nullable=False)
     image_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    generation_type: Mapped[GenerationTypeEnum] = mapped_column(
+        SQLEnum(GenerationTypeEnum, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=GenerationTypeEnum.INITIAL,
+    )
+    parent_generation_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("generation_history.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    revision_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # Status tracking
     status: Mapped[GenerationStatusEnum] = mapped_column(
@@ -60,11 +79,14 @@ class GenerationHistory(Base):
     __table_args__ = (
         Index("idx_created_at", "created_at"),
         Index("idx_status", "status"),
+        Index("idx_generation_type", "generation_type"),
+        Index("idx_parent_generation_id", "parent_generation_id"),
     )
 
     def __repr__(self) -> str:
         return (
             f"<GenerationHistory(id={self.id}, "
             f"topic={self.input_topic[:30]}..., "
+            f"type={self.generation_type}, "
             f"status={self.status})>"
         )

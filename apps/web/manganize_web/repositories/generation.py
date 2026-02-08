@@ -1,11 +1,16 @@
 """Repository for GenerationHistory model"""
 
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from manganize_web.models.generation import GenerationHistory, GenerationStatusEnum
+from manganize_web.models.generation import (
+    GenerationHistory,
+    GenerationStatusEnum,
+    GenerationTypeEnum,
+)
 from manganize_web.repositories.base import BaseRepository
 
 
@@ -143,3 +148,68 @@ class GenerationRepository(BaseRepository[GenerationHistory]):
             await self.delete(generation)
             return True
         return False
+
+    async def create_revision(
+        self,
+        parent_generation: GenerationHistory,
+        revision_generation_id: str,
+        revision_payload: dict[str, Any],
+    ) -> GenerationHistory:
+        """
+        Create revision generation record.
+
+        Args:
+            parent_generation: Parent generation to revise
+            revision_generation_id: New generation ID for revision
+            revision_payload: Revision request payload
+
+        Returns:
+            Created revision generation
+        """
+        revision = GenerationHistory(
+            id=revision_generation_id,
+            character_name=parent_generation.character_name,
+            input_topic=parent_generation.input_topic,
+            generated_title=parent_generation.generated_title,
+            status=GenerationStatusEnum.PENDING,
+            generation_type=GenerationTypeEnum.REVISION,
+            parent_generation_id=parent_generation.id,
+            revision_payload=revision_payload,
+            created_at=datetime.now(timezone.utc),
+        )
+        return await self.create(revision)
+
+    async def get_parent(self, generation_id: str) -> GenerationHistory | None:
+        """
+        Get parent generation of a revision.
+
+        Args:
+            generation_id: Revision generation ID
+
+        Returns:
+            Parent generation if exists, None otherwise
+        """
+        generation = await self.get_by_id(generation_id)
+        if not generation or not generation.parent_generation_id:
+            return None
+        return await self.get_by_id(generation.parent_generation_id)
+
+    async def list_revisions(
+        self, parent_generation_id: str
+    ) -> list[GenerationHistory]:
+        """
+        List revisions for a given parent generation.
+
+        Args:
+            parent_generation_id: Parent generation ID
+
+        Returns:
+            Revisions ordered by created_at ASC
+        """
+        query = (
+            select(GenerationHistory)
+            .where(GenerationHistory.parent_generation_id == parent_generation_id)
+            .order_by(GenerationHistory.created_at.asc())
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
