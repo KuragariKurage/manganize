@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -13,7 +13,15 @@ from starlette.middleware.cors import CORSMiddleware
 
 from manganize_web.api import character, generation, history
 from manganize_web.config import settings
-from manganize_web.models.database import create_engine, create_session_maker, init_db
+from manganize_web.models.database import (
+    create_engine,
+    create_session_maker,
+    get_db_session,
+    init_db,
+)
+from manganize_web.models.generation import GenerationStatusEnum, GenerationTypeEnum
+from manganize_web.repositories.database_session import DatabaseSession
+from manganize_web.services.generator import generator_service
 from manganize_web.templates import templates
 
 # Rate limiter configuration
@@ -98,6 +106,42 @@ async def history_page(request: Request):
     return templates.TemplateResponse(
         "history.html",
         {"request": request, "title": "生成履歴 - Manganize"},
+    )
+
+
+@app.get("/generations/{generation_id}/revision-workspace")
+async def revision_workspace_page(
+    request: Request,
+    generation_id: str,
+    db_session: DatabaseSession = Depends(get_db_session),
+):
+    """Revision workspace page with region editing and before/after comparison."""
+    generation = await generator_service.get_generation_by_id(generation_id, db_session)
+    if not generation:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    if generation.status != GenerationStatusEnum.COMPLETED:
+        raise HTTPException(
+            status_code=409,
+            detail="Generation is not completed yet",
+        )
+
+    if not generation.image_data:
+        raise HTTPException(status_code=404, detail="Image not yet generated")
+
+    return templates.TemplateResponse(
+        "revision_workspace.html",
+        {
+            "request": request,
+            "title": "修正ワークスペース - Manganize",
+            "generation": generation,
+            "generation_type_value": (
+                generation.generation_type.value
+                if hasattr(generation.generation_type, "value")
+                else str(generation.generation_type)
+            ),
+            "is_revision": generation.generation_type == GenerationTypeEnum.REVISION,
+        },
     )
 
 

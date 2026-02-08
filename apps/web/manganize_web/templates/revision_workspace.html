@@ -1,0 +1,1206 @@
+{% extends "base.html" %}
+
+{% block title %}修正ワークスペース - Manganize{% endblock %}
+
+{% block head %}
+<style>
+.revision-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.revision-layout > section {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .revision-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.revision-canvas-wrap {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #c0c0c0;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 0 #808080, inset -1px -1px 0 0 #ffffff;
+}
+
+.revision-canvas-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+}
+
+.revision-canvas-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.revision-state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  border: 1px solid #c0c0c0;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  background: #f0f0f0;
+  padding: 0.125rem 0.5rem;
+}
+
+.revision-state-chip.status-idle {
+  background: #f0f0f0;
+}
+
+.revision-state-chip.status-processing {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.revision-state-chip.status-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.revision-state-chip.status-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.revision-tooltip {
+  position: fixed;
+  z-index: 7000;
+  width: 320px;
+  max-width: calc(100vw - 2rem);
+  background: var(--xp-bg-window);
+  border: 1px solid var(--xp-border-accent);
+  border-top: 2px solid var(--xp-border-light);
+  border-left: 2px solid var(--xp-border-light);
+  border-right: 2px solid var(--xp-border-dark);
+  border-bottom: 2px solid var(--xp-border-dark);
+  box-shadow: var(--xp-shadow-window);
+  padding: 0.75rem;
+}
+
+.revision-tooltip.mobile {
+  left: 1rem !important;
+  right: 1rem;
+  bottom: 1rem;
+  top: auto !important;
+  width: auto;
+}
+
+.revision-tooltip-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #9a3412;
+  margin-bottom: 0.5rem;
+}
+
+.revision-summary-list {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.revision-summary-item {
+  text-align: left;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #c0c0c0;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  background: #f8f8f8;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.revision-summary-item.active {
+  background: #ffedd5;
+  border-color: #fdba74;
+}
+
+.revision-summary-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.revision-summary-text {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.revision-summary-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.revision-summary-status.status-complete {
+  color: #166534;
+}
+
+.revision-summary-status.status-pending {
+  color: #9a3412;
+}
+
+.revision-compare-box {
+  min-height: 280px;
+  background: #ffffff;
+  border: 1px solid #c0c0c0;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.revision-compare-box img {
+  max-width: 100%;
+  max-height: 560px;
+  display: block;
+}
+
+.revision-switch-modal {
+  background: var(--xp-bg-window);
+  border: 1px solid var(--xp-border-accent);
+  border-top: 2px solid var(--xp-border-light);
+  border-left: 2px solid var(--xp-border-light);
+  border-right: 2px solid var(--xp-border-dark);
+  border-bottom: 2px solid var(--xp-border-dark);
+  box-shadow: var(--xp-shadow-window);
+  max-width: 34rem;
+  width: 100%;
+  margin: 0 1rem;
+  padding: 1rem;
+}
+
+.revision-switch-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="revision-workspace" class="max-w-6xl mx-auto" data-generation-id="{{ generation.id }}">
+    <div class="card mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800">画像修正ワークスペース</h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    領域を選択するとその場で修正内容を入力できます。修正前後を同画面で比較します。
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="/" class="btn-secondary">生成画面へ戻る</a>
+                <a href="/api/images/{{ generation.id }}" target="_blank" rel="noopener noreferrer" class="btn-secondary">
+                    修正前画像を開く
+                </a>
+            </div>
+        </div>
+
+        {% if generation_type_value == 'revision' and generation.parent_generation_id %}
+        <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            この画像はリビジョンです。
+            <a href="/api/images/{{ generation.parent_generation_id }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="ml-2 underline hover:text-blue-900">親画像を開く</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="revision-layout">
+        <section class="card">
+            <div class="flex items-center justify-between gap-3 mb-2">
+                <h3 class="text-lg font-semibold text-gray-800">修正前（編集対象）</h3>
+                <span class="text-xs text-gray-600">クリック: 点指定 / ドラッグ: 矩形指定 / 最大5件</span>
+            </div>
+
+            <div class="revision-canvas-wrap" id="revision-canvas-wrap">
+                <img id="revision-base-image"
+                     src="/api/images/{{ generation.id }}"
+                     alt="修正前画像"
+                     draggable="false">
+                <canvas id="revision-editor-canvas"></canvas>
+            </div>
+
+            <div class="mt-4">
+                <label for="revision-global-instruction" class="block text-sm font-medium text-gray-700 mb-1">
+                    全体指示（任意）
+                </label>
+                <textarea id="revision-global-instruction"
+                          rows="2"
+                          class="textarea-field"
+                          placeholder="全体的に明るくする、背景のコントラストを弱める、など"></textarea>
+            </div>
+
+            <div id="revision-progress-wrap" class="mt-4 is-hidden">
+                <p id="revision-progress-message" class="text-sm text-gray-700 mb-2">修正処理を開始します...</p>
+                <div class="progress-container">
+                    <div id="revision-progress-bar" class="progress-bar progress-bar-blue" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap justify-end gap-2">
+                <button id="clear-revision-btn" type="button" class="btn-secondary">選択をクリア</button>
+                <button id="submit-revision-btn" type="button" class="btn-primary" disabled>修正を実行</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="flex items-center justify-between gap-3 mb-2">
+                <h3 class="text-lg font-semibold text-gray-800">修正後（比較）</h3>
+                <span id="after-status-chip" class="revision-state-chip status-idle">未生成</span>
+            </div>
+
+            <div class="revision-compare-box mb-3">
+                <img id="after-image" class="is-hidden" alt="修正後画像">
+                <p id="after-placeholder" class="text-sm text-gray-600">まだ修正結果がありません。領域を選択して修正を実行してください。</p>
+            </div>
+
+            <div id="after-actions" class="is-hidden flex flex-wrap gap-2 mb-4">
+                <a id="after-open-link" class="btn-secondary" target="_blank" rel="noopener noreferrer">修正後画像を開く</a>
+                <a id="after-download-link" class="btn-primary" download>修正後画像をダウンロード</a>
+            </div>
+
+            <h4 class="text-base font-semibold text-gray-800 mb-2">修正一覧</h4>
+            <div id="revision-edit-list" class="revision-summary-list"></div>
+        </section>
+    </div>
+</div>
+
+<div id="revision-tooltip" class="revision-tooltip is-hidden" role="dialog" aria-modal="false" aria-label="修正入力">
+    <p id="revision-tooltip-title" class="revision-tooltip-title">対象 #1</p>
+
+    <label for="tooltip-edit-type" class="block text-xs font-medium text-gray-700 mb-1">修正タイプ（任意）</label>
+    <select id="tooltip-edit-type" class="input-field mb-2">
+        <option value="auto">auto</option>
+        <option value="text">text</option>
+        <option value="illustration">illustration</option>
+        <option value="layout">layout</option>
+        <option value="style">style</option>
+    </select>
+
+    <label for="tooltip-instruction" class="block text-xs font-medium text-gray-700 mb-1">修正指示（必須）</label>
+    <textarea id="tooltip-instruction"
+              rows="3"
+              class="textarea-field mb-2"
+              placeholder="この領域に対する修正内容を入力"></textarea>
+
+    <label for="tooltip-expected-text" class="block text-xs font-medium text-gray-700 mb-1">期待テキスト（任意）</label>
+    <input id="tooltip-expected-text"
+           class="input-field mb-3"
+           placeholder="文字修正時に指定（例: こんにちは）">
+
+    <div class="flex flex-wrap justify-end gap-2">
+        <button id="tooltip-close-btn" type="button" class="btn-secondary">閉じる</button>
+        <button id="tooltip-delete-btn" type="button" class="btn-secondary">削除</button>
+        <button id="tooltip-save-btn" type="button" class="btn-primary">OK</button>
+    </div>
+</div>
+
+<div id="switch-confirm-overlay" class="modal-overlay is-hidden" style="display: block;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-container">
+        <div class="revision-switch-modal" role="dialog" aria-modal="true" aria-label="未保存確認">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">未保存の変更があります</h3>
+            <p class="text-sm text-gray-700 mb-4">
+                ほかの領域に移動する前に、現在の入力をどうしますか？
+            </p>
+            <div class="revision-switch-actions">
+                <button id="switch-cancel-btn" type="button" class="btn-secondary">キャンセル</button>
+                <button id="switch-discard-btn" type="button" class="btn-secondary">破棄して移動</button>
+                <button id="switch-save-btn" type="button" class="btn-primary">保存して移動</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const generationId = String(document.getElementById('revision-workspace')?.dataset.generationId || '');
+    if (!generationId) {
+        return;
+    }
+
+    const maxEdits = 5;
+    const pointRadius = 0.04;
+    const clickThreshold = 6;
+    const markerColor = '#f97316';
+    const badgeRadius = 12;
+
+    const elements = {
+        canvasWrap: document.getElementById('revision-canvas-wrap'),
+        baseImage: document.getElementById('revision-base-image'),
+        canvas: document.getElementById('revision-editor-canvas'),
+        globalInstruction: document.getElementById('revision-global-instruction'),
+        editList: document.getElementById('revision-edit-list'),
+        submitBtn: document.getElementById('submit-revision-btn'),
+        clearBtn: document.getElementById('clear-revision-btn'),
+        progressWrap: document.getElementById('revision-progress-wrap'),
+        progressBar: document.getElementById('revision-progress-bar'),
+        progressMessage: document.getElementById('revision-progress-message'),
+        afterImage: document.getElementById('after-image'),
+        afterPlaceholder: document.getElementById('after-placeholder'),
+        afterChip: document.getElementById('after-status-chip'),
+        afterActions: document.getElementById('after-actions'),
+        afterOpenLink: document.getElementById('after-open-link'),
+        afterDownloadLink: document.getElementById('after-download-link'),
+        tooltip: document.getElementById('revision-tooltip'),
+        tooltipTitle: document.getElementById('revision-tooltip-title'),
+        tooltipInstruction: document.getElementById('tooltip-instruction'),
+        tooltipEditType: document.getElementById('tooltip-edit-type'),
+        tooltipExpectedText: document.getElementById('tooltip-expected-text'),
+        tooltipSaveBtn: document.getElementById('tooltip-save-btn'),
+        tooltipDeleteBtn: document.getElementById('tooltip-delete-btn'),
+        tooltipCloseBtn: document.getElementById('tooltip-close-btn'),
+        switchOverlay: document.getElementById('switch-confirm-overlay'),
+        switchSaveBtn: document.getElementById('switch-save-btn'),
+        switchDiscardBtn: document.getElementById('switch-discard-btn'),
+        switchCancelBtn: document.getElementById('switch-cancel-btn'),
+    };
+
+    const ctx = elements.canvas?.getContext('2d');
+    if (!ctx || !elements.baseImage || !elements.canvas) {
+        return;
+    }
+
+    const state = {
+        edits: [],
+        activeEditId: null,
+        draft: null,
+        pendingSwitchTargetId: null,
+        isDrawing: false,
+        draftBox: null,
+        startX: 0,
+        startY: 0,
+        isSubmitting: false,
+        isStreaming: false,
+        stream: null,
+    };
+
+    function makeEditId() {
+        return `edit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function getEditById(editId) {
+        return state.edits.find((edit) => edit.id === editId) || null;
+    }
+
+    function isMobileTooltipMode() {
+        return window.matchMedia('(max-width: 1023px)').matches;
+    }
+
+    function syncCanvasSize() {
+        const rect = elements.baseImage.getBoundingClientRect();
+        elements.canvas.width = Math.max(1, Math.floor(rect.width));
+        elements.canvas.height = Math.max(1, Math.floor(rect.height));
+        renderCanvas();
+        if (state.activeEditId) {
+            positionTooltip(state.activeEditId);
+        }
+    }
+
+    function normalizePoint(x, y) {
+        return {
+            x: Math.min(1, Math.max(0, x / elements.canvas.width)),
+            y: Math.min(1, Math.max(0, y / elements.canvas.height)),
+        };
+    }
+
+    function normalizeBox(x1, y1, x2, y2) {
+        const left = Math.min(x1, x2);
+        const top = Math.min(y1, y2);
+        const width = Math.abs(x2 - x1);
+        const height = Math.abs(y2 - y1);
+        return {
+            x: Math.min(1, Math.max(0, left / elements.canvas.width)),
+            y: Math.min(1, Math.max(0, top / elements.canvas.height)),
+            w: Math.min(1, Math.max(0, width / elements.canvas.width)),
+            h: Math.min(1, Math.max(0, height / elements.canvas.height)),
+        };
+    }
+
+    function denormalizePoint(target) {
+        return {
+            x: target.x * elements.canvas.width,
+            y: target.y * elements.canvas.height,
+        };
+    }
+
+    function denormalizeBox(target) {
+        return {
+            x: target.x * elements.canvas.width,
+            y: target.y * elements.canvas.height,
+            w: target.w * elements.canvas.width,
+            h: target.h * elements.canvas.height,
+        };
+    }
+
+    function getMousePosition(event) {
+        const rect = elements.canvas.getBoundingClientRect();
+        return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+        };
+    }
+
+    function getBadgeCenter(edit) {
+        if (edit.target.kind === 'point') {
+            const p = denormalizePoint(edit.target);
+            return { x: p.x + 18, y: p.y - 18 };
+        }
+        const b = denormalizeBox(edit.target);
+        return { x: b.x + 14, y: b.y + 14 };
+    }
+
+    function getCoordLabel(edit) {
+        if (edit.target.kind === 'point') {
+            return `(${edit.target.x.toFixed(2)}, ${edit.target.y.toFixed(2)})`;
+        }
+        return `(${edit.target.x.toFixed(2)}, ${edit.target.y.toFixed(2)}, ${edit.target.w.toFixed(2)}, ${edit.target.h.toFixed(2)})`;
+    }
+
+    function drawBadge(x, y, number) {
+        ctx.beginPath();
+        ctx.fillStyle = markerColor;
+        ctx.arc(x, y, badgeRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(number), x, y + 0.5);
+    }
+
+    function renderCanvas() {
+        ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+
+        state.edits.forEach((edit, index) => {
+            const isActive = edit.id === state.activeEditId;
+            ctx.strokeStyle = markerColor;
+            ctx.fillStyle = markerColor;
+            ctx.lineWidth = isActive ? 4 : 3;
+
+            if (edit.target.kind === 'point') {
+                const p = denormalizePoint(edit.target);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+
+                const badge = getBadgeCenter(edit);
+                drawBadge(badge.x, badge.y, index + 1);
+
+                ctx.font = '600 11px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = markerColor;
+                ctx.fillText(getCoordLabel(edit), p.x + 12, p.y + 10);
+            } else {
+                const b = denormalizeBox(edit.target);
+                ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+                const badge = getBadgeCenter(edit);
+                drawBadge(badge.x, badge.y, index + 1);
+
+                ctx.font = '600 11px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = markerColor;
+                ctx.fillText(getCoordLabel(edit), b.x + 4, Math.min(elements.canvas.height - 14, b.y + b.h + 4));
+            }
+        });
+
+        if (state.draftBox) {
+            ctx.save();
+            ctx.strokeStyle = markerColor;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 4]);
+            ctx.strokeRect(state.draftBox.x, state.draftBox.y, state.draftBox.w, state.draftBox.h);
+            ctx.restore();
+        }
+    }
+
+    function getEffectiveEdit(edit) {
+        if (edit.id !== state.activeEditId || !state.draft) {
+            return edit;
+        }
+        return {
+            ...edit,
+            instruction: state.draft.instruction,
+            edit_type: state.draft.edit_type,
+            expected_text: state.draft.expected_text,
+        };
+    }
+
+    function renderEditList() {
+        if (state.edits.length === 0) {
+            elements.editList.innerHTML = '<p class="text-sm text-gray-500">まだ修正対象がありません。画像上をクリックまたはドラッグしてください。</p>';
+            updateSubmitState();
+            return;
+        }
+
+        elements.editList.innerHTML = state.edits
+            .map((edit, index) => {
+                const current = getEffectiveEdit(edit);
+                const instruction = (current.instruction || '').trim();
+                const summary = instruction.length > 0 ? instruction : '未入力';
+                const targetKind = edit.target.kind === 'point' ? '点指定' : '矩形指定';
+                const statusClass = instruction.length > 0 ? 'status-complete' : 'status-pending';
+                const statusLabel = instruction.length > 0 ? '完了' : '未完了';
+                const activeClass = edit.id === state.activeEditId ? 'active' : '';
+
+                return `
+                    <button type="button" class="revision-summary-item ${activeClass}" data-action="focus" data-edit-id="${edit.id}">
+                        <div class="revision-summary-meta">
+                            <span>#${index + 1} / ${targetKind}</span>
+                            <span class="revision-summary-status ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <p class="revision-summary-text">${escapeHtml(summary)}</p>
+                    </button>
+                `;
+            })
+            .join('');
+
+        updateSubmitState();
+    }
+
+    function updateSubmitState() {
+        const hasValidEdits =
+            state.edits.length > 0 &&
+            state.edits.every((edit) => {
+                const current = getEffectiveEdit(edit);
+                return String(current.instruction || '').trim().length > 0;
+            });
+        elements.submitBtn.disabled = !hasValidEdits || state.isSubmitting || state.isStreaming;
+    }
+
+    function setAfterState(status, message) {
+        const map = {
+            idle: '未生成',
+            processing: '処理中',
+            completed: '完了',
+            error: 'エラー',
+        };
+        elements.afterChip.textContent = map[status] || '未生成';
+        elements.afterChip.className = `revision-state-chip status-${status}`;
+
+        if (status === 'completed') {
+            elements.afterPlaceholder.classList.add('is-hidden');
+            elements.afterImage.classList.remove('is-hidden');
+            elements.afterActions.classList.remove('is-hidden');
+        } else {
+            elements.afterImage.classList.add('is-hidden');
+            elements.afterActions.classList.add('is-hidden');
+            elements.afterPlaceholder.classList.remove('is-hidden');
+            elements.afterPlaceholder.textContent = message;
+        }
+    }
+
+    function setProgressState(message, progress, status) {
+        elements.progressWrap.classList.remove('is-hidden');
+        elements.progressMessage.textContent = message;
+        elements.progressBar.style.width = `${Math.max(0, Math.min(100, Number(progress) || 0))}%`;
+
+        if (status === 'error') {
+            elements.progressBar.className = 'progress-bar progress-bar-red';
+            return;
+        }
+        if (status === 'completed') {
+            elements.progressBar.className = 'progress-bar progress-bar-green';
+            return;
+        }
+        elements.progressBar.className = 'progress-bar progress-bar-blue';
+    }
+
+    function loadDraftFromEdit(edit) {
+        state.draft = {
+            instruction: edit.instruction || '',
+            edit_type: edit.edit_type || 'auto',
+            expected_text: edit.expected_text || '',
+        };
+        elements.tooltipInstruction.value = state.draft.instruction;
+        elements.tooltipEditType.value = state.draft.edit_type;
+        elements.tooltipExpectedText.value = state.draft.expected_text;
+    }
+
+    function readDraftFromInputs() {
+        if (!state.draft) {
+            return;
+        }
+        state.draft.instruction = elements.tooltipInstruction.value;
+        state.draft.edit_type = elements.tooltipEditType.value;
+        state.draft.expected_text = elements.tooltipExpectedText.value;
+        renderEditList();
+    }
+
+    function isDraftDirty() {
+        if (!state.activeEditId || !state.draft) {
+            return false;
+        }
+        const edit = getEditById(state.activeEditId);
+        if (!edit) {
+            return false;
+        }
+        return (
+            String(edit.instruction || '') !== String(state.draft.instruction || '') ||
+            String(edit.edit_type || 'auto') !== String(state.draft.edit_type || 'auto') ||
+            String(edit.expected_text || '') !== String(state.draft.expected_text || '')
+        );
+    }
+
+    function persistDraftToEdit() {
+        if (!state.activeEditId || !state.draft) {
+            return;
+        }
+        const edit = getEditById(state.activeEditId);
+        if (!edit) {
+            return;
+        }
+        edit.instruction = state.draft.instruction;
+        edit.edit_type = state.draft.edit_type;
+        edit.expected_text = state.draft.expected_text;
+    }
+
+    function openSwitchDialog(targetEditId) {
+        state.pendingSwitchTargetId = targetEditId;
+        elements.switchOverlay.classList.remove('is-hidden');
+    }
+
+    function closeSwitchDialog() {
+        state.pendingSwitchTargetId = null;
+        elements.switchOverlay.classList.add('is-hidden');
+    }
+
+    function closeTooltip() {
+        elements.tooltip.classList.add('is-hidden');
+        state.activeEditId = null;
+        state.draft = null;
+        renderEditList();
+        renderCanvas();
+    }
+
+    function positionTooltip(editId) {
+        const edit = getEditById(editId);
+        if (!edit || elements.tooltip.classList.contains('is-hidden')) {
+            return;
+        }
+
+        if (isMobileTooltipMode()) {
+            elements.tooltip.classList.add('mobile');
+            elements.tooltip.style.left = '1rem';
+            elements.tooltip.style.top = 'auto';
+            elements.tooltip.style.bottom = '1rem';
+            return;
+        }
+
+        elements.tooltip.classList.remove('mobile');
+        elements.tooltip.style.bottom = 'auto';
+
+        const canvasRect = elements.canvas.getBoundingClientRect();
+        const anchor = getBadgeCenter(edit);
+
+        let left = canvasRect.left + anchor.x + 14;
+        let top = canvasRect.top + anchor.y - 18;
+
+        const tooltipWidth = elements.tooltip.offsetWidth || 320;
+        const tooltipHeight = elements.tooltip.offsetHeight || 260;
+        const margin = 10;
+
+        if (left + tooltipWidth > window.innerWidth - margin) {
+            left = canvasRect.left + anchor.x - tooltipWidth - 14;
+        }
+        if (left < margin) {
+            left = margin;
+        }
+
+        if (top + tooltipHeight > window.innerHeight - margin) {
+            top = window.innerHeight - tooltipHeight - margin;
+        }
+        if (top < margin) {
+            top = margin;
+        }
+
+        elements.tooltip.style.left = `${Math.round(left)}px`;
+        elements.tooltip.style.top = `${Math.round(top)}px`;
+    }
+
+    function openTooltip(editId, options = {}) {
+        const { bypassDirtyCheck = false } = options;
+
+        if (state.activeEditId === editId && state.draft) {
+            elements.tooltip.classList.remove('is-hidden');
+            window.requestAnimationFrame(() => {
+                positionTooltip(editId);
+                elements.tooltipInstruction.focus();
+            });
+            return;
+        }
+
+        if (!bypassDirtyCheck && state.activeEditId && state.activeEditId !== editId && isDraftDirty()) {
+            openSwitchDialog(editId);
+            return;
+        }
+
+        const edit = getEditById(editId);
+        if (!edit) {
+            return;
+        }
+
+        const index = state.edits.findIndex((item) => item.id === edit.id);
+        state.activeEditId = editId;
+        loadDraftFromEdit(edit);
+
+        elements.tooltipTitle.textContent = `対象 #${index + 1}`;
+        elements.tooltip.classList.remove('is-hidden');
+
+        renderEditList();
+        renderCanvas();
+
+        window.requestAnimationFrame(() => {
+            positionTooltip(editId);
+            elements.tooltipInstruction.focus();
+        });
+    }
+
+    function removeEdit(editId) {
+        const index = state.edits.findIndex((edit) => edit.id === editId);
+        if (index === -1) {
+            return;
+        }
+        state.edits.splice(index, 1);
+
+        if (state.activeEditId === editId) {
+            elements.tooltip.classList.add('is-hidden');
+            state.activeEditId = null;
+            state.draft = null;
+        }
+
+        renderEditList();
+        renderCanvas();
+    }
+
+    function addEdit(target) {
+        if (state.edits.length >= maxEdits) {
+            window.showToast('修正対象は最大5件までです', 'error');
+            return;
+        }
+
+        const edit = {
+            id: makeEditId(),
+            target,
+            instruction: '',
+            edit_type: 'auto',
+            expected_text: '',
+        };
+
+        state.edits.push(edit);
+        renderEditList();
+        renderCanvas();
+        openTooltip(edit.id, { bypassDirtyCheck: true });
+    }
+
+    function distance(x1, y1, x2, y2) {
+        const dx = x1 - x2;
+        const dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function findEditAt(x, y) {
+        for (let i = state.edits.length - 1; i >= 0; i -= 1) {
+            const edit = state.edits[i];
+            const badge = getBadgeCenter(edit);
+            if (distance(x, y, badge.x, badge.y) <= badgeRadius + 3) {
+                return edit.id;
+            }
+
+            if (edit.target.kind === 'point') {
+                const p = denormalizePoint(edit.target);
+                if (distance(x, y, p.x, p.y) <= 12) {
+                    return edit.id;
+                }
+            } else {
+                const b = denormalizeBox(edit.target);
+                if (x >= b.x - 4 && x <= b.x + b.w + 4 && y >= b.y - 4 && y <= b.y + b.h + 4) {
+                    return edit.id;
+                }
+            }
+        }
+        return null;
+    }
+
+    function clearAllEdits() {
+        if (state.edits.length === 0) {
+            return;
+        }
+        state.edits = [];
+        state.activeEditId = null;
+        state.draft = null;
+        elements.tooltip.classList.add('is-hidden');
+        renderEditList();
+        renderCanvas();
+    }
+
+    function closeStream() {
+        if (state.stream) {
+            state.stream.close();
+            state.stream = null;
+        }
+        state.isStreaming = false;
+        updateSubmitState();
+    }
+
+    function startRevisionStream(revisionGenerationId) {
+        closeStream();
+
+        state.isStreaming = true;
+        updateSubmitState();
+
+        setAfterState('processing', '修正処理を実行中です...');
+        setProgressState('修正処理を開始しました...', 0, 'generating');
+
+        const source = new EventSource(`/api/generate/${revisionGenerationId}/stream`);
+        state.stream = source;
+
+        source.addEventListener('progress', (event) => {
+            let data = null;
+            try {
+                data = JSON.parse(event.data);
+            } catch (_error) {
+                return;
+            }
+
+            setProgressState(
+                data.message || '処理中...',
+                data.progress || 0,
+                data.status || 'generating',
+            );
+
+            if (data.status === 'completed') {
+                const imageUrl = `/api/images/${revisionGenerationId}?t=${Date.now()}`;
+                elements.afterImage.src = imageUrl;
+                elements.afterOpenLink.href = `/api/images/${revisionGenerationId}`;
+                elements.afterDownloadLink.href = `/api/images/${revisionGenerationId}/download`;
+                setAfterState('completed', '修正が完了しました。');
+                window.showToast('修正が完了しました', 'success');
+                closeStream();
+                return;
+            }
+
+            if (data.status === 'error') {
+                const message = data.message || '修正処理に失敗しました';
+                setAfterState('error', message);
+                window.showToast(message, 'error');
+                closeStream();
+            }
+        });
+
+        source.onerror = () => {
+            if (!state.isStreaming) {
+                return;
+            }
+            setAfterState('error', '進捗ストリームの接続に失敗しました');
+            window.showToast('進捗取得に失敗しました', 'error');
+            closeStream();
+        };
+    }
+
+    elements.canvas.addEventListener('mousedown', (event) => {
+        const pos = getMousePosition(event);
+        const existingId = findEditAt(pos.x, pos.y);
+        if (existingId) {
+            openTooltip(existingId);
+            return;
+        }
+
+        state.isDrawing = true;
+        state.startX = pos.x;
+        state.startY = pos.y;
+        state.draftBox = null;
+    });
+
+    elements.canvas.addEventListener('mousemove', (event) => {
+        if (!state.isDrawing) {
+            return;
+        }
+
+        const pos = getMousePosition(event);
+        const width = pos.x - state.startX;
+        const height = pos.y - state.startY;
+
+        state.draftBox = {
+            x: width >= 0 ? state.startX : pos.x,
+            y: height >= 0 ? state.startY : pos.y,
+            w: Math.abs(width),
+            h: Math.abs(height),
+        };
+
+        renderCanvas();
+    });
+
+    elements.canvas.addEventListener('mouseup', (event) => {
+        if (!state.isDrawing) {
+            return;
+        }
+
+        state.isDrawing = false;
+
+        const pos = getMousePosition(event);
+        const dx = pos.x - state.startX;
+        const dy = pos.y - state.startY;
+        const distanceValue = Math.sqrt(dx * dx + dy * dy);
+
+        if (distanceValue < clickThreshold) {
+            const point = normalizePoint(state.startX, state.startY);
+            addEdit({ kind: 'point', x: point.x, y: point.y, radius: pointRadius });
+        } else {
+            const box = normalizeBox(state.startX, state.startY, pos.x, pos.y);
+            if (box.w > 0.001 && box.h > 0.001) {
+                addEdit({ kind: 'box', x: box.x, y: box.y, w: box.w, h: box.h });
+            }
+        }
+
+        state.draftBox = null;
+        renderCanvas();
+    });
+
+    elements.canvas.addEventListener('mouseleave', () => {
+        if (!state.isDrawing) {
+            return;
+        }
+        state.isDrawing = false;
+        state.draftBox = null;
+        renderCanvas();
+    });
+
+    elements.editList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action="focus"]');
+        if (!button) {
+            return;
+        }
+        const editId = button.dataset.editId;
+        if (!editId) {
+            return;
+        }
+        openTooltip(editId);
+    });
+
+    elements.tooltipInstruction.addEventListener('input', readDraftFromInputs);
+    elements.tooltipEditType.addEventListener('change', readDraftFromInputs);
+    elements.tooltipExpectedText.addEventListener('input', readDraftFromInputs);
+
+    elements.tooltipSaveBtn.addEventListener('click', () => {
+        persistDraftToEdit();
+        closeTooltip();
+        renderEditList();
+        renderCanvas();
+    });
+
+    elements.tooltipDeleteBtn.addEventListener('click', () => {
+        if (!state.activeEditId) {
+            return;
+        }
+        removeEdit(state.activeEditId);
+    });
+
+    elements.tooltipCloseBtn.addEventListener('click', () => {
+        if (isDraftDirty()) {
+            const shouldDiscard = window.confirm('未保存の変更があります。破棄して閉じますか？');
+            if (!shouldDiscard) {
+                return;
+            }
+        }
+        closeTooltip();
+    });
+
+    elements.switchSaveBtn.addEventListener('click', () => {
+        persistDraftToEdit();
+        const nextId = state.pendingSwitchTargetId;
+        closeSwitchDialog();
+        if (nextId) {
+            openTooltip(nextId, { bypassDirtyCheck: true });
+        }
+    });
+
+    elements.switchDiscardBtn.addEventListener('click', () => {
+        const nextId = state.pendingSwitchTargetId;
+        closeSwitchDialog();
+        if (nextId) {
+            openTooltip(nextId, { bypassDirtyCheck: true });
+        }
+    });
+
+    elements.switchCancelBtn.addEventListener('click', closeSwitchDialog);
+
+    elements.clearBtn.addEventListener('click', () => {
+        clearAllEdits();
+        window.showToast('選択領域をクリアしました', 'info');
+    });
+
+    elements.submitBtn.addEventListener('click', async () => {
+        if (state.isSubmitting || state.isStreaming) {
+            return;
+        }
+
+        if (state.activeEditId && isDraftDirty()) {
+            persistDraftToEdit();
+        }
+
+        const hasInvalid =
+            state.edits.length === 0 ||
+            state.edits.some((edit) => String(edit.instruction || '').trim().length === 0);
+
+        if (hasInvalid) {
+            window.showToast('修正一覧の未完了項目を入力してください', 'error');
+            renderEditList();
+            return;
+        }
+
+        state.isSubmitting = true;
+        updateSubmitState();
+
+        const payload = {
+            global_instruction: elements.globalInstruction.value.trim() || null,
+            edits: state.edits.map((edit) => ({
+                target: edit.target,
+                instruction: String(edit.instruction || '').trim(),
+                edit_type: edit.edit_type || 'auto',
+                expected_text: edit.expected_text ? String(edit.expected_text).trim() : null,
+            })),
+        };
+
+        try {
+            const response = await fetch(`/api/generations/${generationId}/revisions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                let detail = '修正リクエストの送信に失敗しました';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.detail) {
+                        detail = typeof errorData.detail === 'string'
+                            ? errorData.detail
+                            : JSON.stringify(errorData.detail);
+                    }
+                } catch (_ignored) {
+                    // noop
+                }
+                throw new Error(detail);
+            }
+
+            const data = await response.json();
+            window.showToast('修正リクエストを送信しました', 'success');
+            startRevisionStream(data.generation_id);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : '修正リクエストに失敗しました';
+            window.showToast(message, 'error');
+            setAfterState('error', message);
+        } finally {
+            state.isSubmitting = false;
+            updateSubmitState();
+            renderEditList();
+            renderCanvas();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        syncCanvasSize();
+        if (state.activeEditId) {
+            positionTooltip(state.activeEditId);
+        }
+    });
+
+    window.addEventListener('scroll', () => {
+        if (state.activeEditId) {
+            positionTooltip(state.activeEditId);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        if (!elements.switchOverlay.classList.contains('is-hidden')) {
+            closeSwitchDialog();
+            return;
+        }
+
+        if (elements.tooltip.classList.contains('is-hidden')) {
+            return;
+        }
+
+        if (isDraftDirty()) {
+            const shouldDiscard = window.confirm('未保存の変更があります。破棄して閉じますか？');
+            if (!shouldDiscard) {
+                return;
+            }
+        }
+        closeTooltip();
+    });
+
+    if (elements.baseImage.complete) {
+        syncCanvasSize();
+    } else {
+        elements.baseImage.addEventListener('load', syncCanvasSize, { once: true });
+    }
+
+    setAfterState('idle', 'まだ修正結果がありません。領域を選択して修正を実行してください。');
+    renderEditList();
+    renderCanvas();
+})();
+</script>
+{% endblock %}
