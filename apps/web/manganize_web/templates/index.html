@@ -15,7 +15,7 @@
               hx-target="#content-area"
               hx-swap="innerHTML"
               @htmx:before-request.self="isGenerating = true"
-              @reset-generation.window="isGenerating = false">
+              @reset-generation.window="isGenerating = false; clearFile(); topicText = ''">
             <input type="hidden" name="upload_id" x-model="uploadId">
 
             <!-- Character selection -->
