@@ -174,6 +174,7 @@ class GenerationRepository(BaseRepository[GenerationHistory]):
             status=GenerationStatusEnum.PENDING,
             generation_type=GenerationTypeEnum.REVISION,
             parent_generation_id=parent_generation.id,
+            source_upload_id=parent_generation.source_upload_id,
             revision_payload=revision_payload,
             created_at=datetime.now(timezone.utc),
         )

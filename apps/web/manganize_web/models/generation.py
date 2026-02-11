@@ -59,6 +59,11 @@ class GenerationHistory(Base):
         ForeignKey("generation_history.id", ondelete="SET NULL"),
         nullable=True,
     )
+    source_upload_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("upload_sources.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     revision_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # Status tracking
@@ -81,6 +86,7 @@ class GenerationHistory(Base):
         Index("idx_status", "status"),
         Index("idx_generation_type", "generation_type"),
         Index("idx_parent_generation_id", "parent_generation_id"),
+        Index("idx_source_upload_id", "source_upload_id"),
     )
 
     def __repr__(self) -> str:

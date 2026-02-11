@@ -3,51 +3,59 @@
 version: "3"
 
 tasks:
-    default:
-        desc: List all tasks
-        cmds:
-            - task --list-all
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list-all
 
-    run:
-        desc: Run the application (CLI agent)
-        cmds:
-            - uv run python main.py {{.CLI_ARGS}}
+  init:
+    desc: setup local server
+    cmds:
+      - uv run alembic upgrade head
+      - uv run python scripts/seed_characters.py
+      - npm install
+      - echo "Setup complete! set env GOOGLE_API_KEY and run 'task web' to launch the app."
 
-    lint:
-        desc: Run the linter
-        cmds:
-            - uv run ruff check .
+  run:
+    desc: Run the application (CLI agent)
+    cmds:
+      - uv run python main.py {{.CLI_ARGS}}
 
-    format:
-        desc: Run the formatter
-        cmds:
-            - uv run ruff check --fix .
+  lint:
+    desc: Run the linter
+    cmds:
+      - uv run ruff check .
 
-    typecheck:
-        desc: Run the type checker
-        cmds:
-            - uv run ty check .
+  format:
+    desc: Run the formatter
+    cmds:
+      - uv run ruff check --fix .
 
-    dev:fastapi:
-        desc: Run the fastapi development server
-        cmds:
-            - uv run fastapi dev apps/web/manganize_web/main.py --reload-dir apps/web --reload-dir packages/core
+  typecheck:
+    desc: Run the type checker
+    cmds:
+      - uv run ty check .
 
-    dev:tailwindcss:
-        desc: Run the tailwindcss development server
-        cmds:
-            - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch
+  dev:fastapi:
+    desc: Run the fastapi development server
+    cmds:
+      - uv run fastapi dev apps/web/manganize_web/main.py --reload-dir apps/web --reload-dir packages/core
 
-    build:tailwindcss:
-        desc: Build the tailwindcss output for production
-        cmds:
-            - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --minify
+  dev:tailwindcss:
+    desc: Run the tailwindcss development server
+    cmds:
+      - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --watch
 
-    dev:
-        desc: Run the web application in development mode with hot reload
-        deps: [dev:fastapi, dev:tailwindcss]
+  build:tailwindcss:
+    desc: Build the tailwindcss output for production
+    cmds:
+      - npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/manganize_web/static/css/output.css --minify
 
-    web:
-        desc: Alias for dev task
-        cmds:
-            - task: dev
+  dev:
+    desc: Run the web application in development mode with hot reload
+    deps: [dev:fastapi, dev:tailwindcss]
+
+  web:
+    desc: Alias for dev task
+    cmds:
+      - task: dev

@@ -14,6 +14,25 @@
 
 ---
 
+## Phase 0.5: S3互換アップロード移行（完了）
+
+- [x] **T-UPL-001**: `StorageBackend` 抽象化と S3 互換実装を追加
+  - AWS S3 / Cloudflare R2 / MinIO を環境変数で切替可能にする
+
+- [x] **T-UPL-002**: `upload_sources` テーブルと `generation_history.source_upload_id` を追加
+  - `upload_id -> object_key` メタデータ管理を導入
+
+- [x] **T-UPL-003**: `POST /api/upload` を object storage 保存 + `upload_id` 返却に変更
+  - ローカル永続ディスクを使わないアップロード処理へ変更
+
+- [x] **T-UPL-004**: `POST /api/generate` を `upload_id` 対応に変更
+  - 生成時に署名付き URL を解決し、Agent 入力へ組み込む
+
+- [x] **T-UPL-005**: フロントフォームを `upload_id` 送信方式へ更新
+  - `topic` または `upload_id` があれば生成可能に変更
+
+---
+
 ## Phase 1: プロジェクトセットアップ
 
 ### Backend
@@ -188,3 +207,9 @@
 | Phase 4 | 0 | 2 | 0% |
 | Phase 5 | 0 | 2 | 0% |
 | **合計** | **0** | **27** | **0%** |
+
+### S3互換アップロード移行 進捗
+
+| Phase | 完了 | 合計 | 進捗率 |
+|-------|------|------|--------|
+| Phase 0.5 | 5 | 5 | 100% |

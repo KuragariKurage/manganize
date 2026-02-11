@@ -84,10 +84,11 @@ async def get_db_session(request: Request) -> AsyncGenerator["DatabaseSession", 
 
 async def init_db(engine: AsyncEngine) -> None:
     """
-    Initialize database tables.
+    Initialize database connection.
 
     Args:
         engine: SQLAlchemy async engine
     """
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Keep startup initialization lightweight.
+    # Schema management must be handled by Alembic migrations.
+    del engine

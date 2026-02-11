@@ -6,24 +6,34 @@
 
 ### [はじめての Manganize](getting-started.md)
 
-- セットアップ
-- 最初の漫画生成
+- セットアップ（uv workspace、task init）
+- CLI での漫画生成
+- Web アプリの起動
 - プログラムからの使い方
+
+### [初めてのマンガを生成する](first-manga.md)
+
+- Web アプリでの漫画生成ステップバイステップ
+- ファイルアップロード
+- リビジョンワークスペースでの修正
 
 ### [LangGraph を理解する](understanding-langgraph.md)
 
 - LangGraph の基本概念
-- 3 段階パイプラインの構造
-- 状態管理とチェックポイント
+- 3 ノード + 関連度チェックのグラフ構造
+- 状態スキーマとノード実装
+- チェックポイント
 
 ## 推奨順序
 
 ```
-1. はじめての Manganize
+1. はじめての Manganize（セットアップ）
      ↓
-2. LangGraph を理解する
+2. 初めてのマンガを生成する（Web アプリ）
      ↓
-3. How-to Guides へ
+3. LangGraph を理解する（仕組み）
+     ↓
+4. How-to Guides へ
 ```
 
 ## 次のステップ

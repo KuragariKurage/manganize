@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import BinaryIO
 
 from fastapi import HTTPException, UploadFile
+from manganize_web.config import settings
 
 # Maximum file size: 10MB
-MAX_FILE_SIZE = 10 * 1024 * 1024
+MAX_FILE_SIZE = settings.max_file_size_mb * 1024 * 1024
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {".txt", ".pdf", ".md", ".markdown"}
@@ -73,15 +74,7 @@ async def extract_text_from_file(file: UploadFile) -> str:
     validate_file_size(file)
 
     # Read file content
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"ファイルサイズが大きすぎます。{MAX_FILE_SIZE / 1024 / 1024:.0f}MB以下にしてください。",
-        )
-
-    # Reset file position for potential reuse
-    await file.seek(0)
+    content = await read_validated_file_bytes(file)
 
     ext = Path(file.filename).suffix.lower()
 
@@ -136,3 +129,30 @@ async def extract_text_from_file(file: UploadFile) -> str:
             status_code=500,
             detail=f"ファイルの処理中にエラーが発生しました: {str(e)}",
         )
+
+
+async def read_validated_file_bytes(file: UploadFile) -> bytes:
+    """
+    Validate and read uploaded file bytes.
+
+    Args:
+        file: Uploaded file
+
+    Returns:
+        Raw file bytes
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="ファイル名が不正です")
+
+    validate_file_type(file.filename)
+    validate_file_size(file)
+
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"ファイルサイズが大きすぎます。{MAX_FILE_SIZE / 1024 / 1024:.0f}MB以下にしてください。",
+        )
+
+    await file.seek(0)
+    return content
