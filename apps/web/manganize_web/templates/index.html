@@ -15,7 +15,8 @@
               hx-target="#content-area"
               hx-swap="innerHTML"
               @htmx:before-request.self="isGenerating = true"
-              @reset-generation.window="isGenerating = false">
+              @reset-generation.window="isGenerating = false; clearFile(); topicText = ''">
+            <input type="hidden" name="upload_id" x-model="uploadId">
 
             <!-- Character selection -->
             <div class="mb-4">
@@ -108,12 +109,11 @@
                           rows="5"
                           class="textarea-field"
                           placeholder="マンガにしたいトピックを入力してください（例: Transformerアーキテクチャについて）"
-                          required
                           minlength="1"
                           maxlength="50000"
                           x-model="topicText"></textarea>
                 <p class="text-sm text-gray-500 mt-1">
-                    テキストを直接入力するか、上記からファイルをアップロードしてください
+                    テキストを入力するか、上記からファイルをアップロードしてください（両方指定も可能）
                 </p>
             </div>
 
@@ -185,13 +185,14 @@
     function generationForm() {
         return {
             topicText: '',
+            uploadId: '',
             isDragging: false,
             isUploading: false,
             uploadedFilename: '',
             isGenerating: false,
 
             get canGenerate() {
-                return this.topicText.trim().length > 0 && !this.isGenerating;
+                return (this.topicText.trim().length > 0 || this.uploadId.length > 0) && !this.isGenerating;
             },
 
             handleDrop(event) {
@@ -227,7 +228,7 @@
                     }
 
                     const data = await response.json();
-                    this.topicText = data.text;
+                    this.uploadId = data.upload_id;
                     this.uploadedFilename = data.filename;
 
                     window.showToast('ファイルをアップロードしました', 'success');
@@ -241,7 +242,7 @@
 
             clearFile() {
                 this.uploadedFilename = '';
-                this.topicText = '';
+                this.uploadId = '';
                 document.getElementById('file-input').value = '';
             }
         };

@@ -16,40 +16,36 @@ from manganize_web.schemas.generation import (
     RevisionCreateResponse,
 )
 from manganize_web.services.generator import generator_service
+from manganize_web.services.upload_source import upload_source_service
 from manganize_web.templates import templates
-from manganize_web.utils.file_processing import extract_text_from_file
 from manganize_web.utils.filename import generate_download_filename
 
 router = APIRouter()
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
+async def upload_file(
+    file: UploadFile = File(...),
+    db_session: DatabaseSession = Depends(get_db_session),
+) -> dict[str, str]:
     """
-    Upload and extract text from a file (txt, pdf, md).
+    Upload a file to object storage and create upload metadata.
 
     Args:
         file: Uploaded file
 
     Returns:
-        JSON with extracted text content
+        JSON with upload source metadata
 
     Raises:
-        HTTPException: If file validation or text extraction fails
+        HTTPException: If file validation or upload fails
     """
     try:
-        text = await extract_text_from_file(file)
-
-        # Limit text length to prevent excessive input
-        max_length = 50000  # characters
-        if len(text) > max_length:
-            text = (
-                text[:max_length] + "\n\n[テキストが長すぎるため、切り詰められました]"
-            )
+        source = await upload_source_service.create_upload(file, db_session)
 
         return {
-            "text": text,
-            "filename": file.filename or "unknown",
+            "upload_id": source.id,
+            "filename": source.original_filename,
         }
 
     except HTTPException:
@@ -64,8 +60,9 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
 @router.post("/generate")
 async def create_generation(
     request: Request,
-    topic: str = Form(...),
+    topic: str = Form(""),
     character: str = Form(...),
+    upload_id: str | None = Form(None),
     db_session: DatabaseSession = Depends(get_db_session),
 ):
     """
@@ -74,11 +71,15 @@ async def create_generation(
     Returns HTML partial with progress indicator and SSE connection.
     """
     # Delegate to service layer
-    generation_id = await generator_service.create_generation_request(
-        topic=topic,
-        character_name=character,
-        db_session=db_session,
-    )
+    try:
+        generation_id = await generator_service.create_generation_request(
+            topic=topic,
+            character_name=character,
+            upload_id=upload_id,
+            db_session=db_session,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Return HTML with SSE connection
     # The actual generation will be triggered by the SSE stream endpoint

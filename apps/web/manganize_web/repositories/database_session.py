@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from manganize_web.repositories.character import CharacterRepository
 from manganize_web.repositories.generation import GenerationRepository
+from manganize_web.repositories.upload_source import UploadSourceRepository
 
 
 class DatabaseSession:
@@ -33,6 +34,7 @@ class DatabaseSession:
         # Initialize repositories
         self.generations = GenerationRepository(session)
         self.characters = CharacterRepository(session)
+        self.upload_sources = UploadSourceRepository(session)
 
     async def commit(self) -> None:
         """Commit the current transaction"""

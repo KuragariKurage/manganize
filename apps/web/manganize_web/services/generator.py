@@ -13,6 +13,7 @@ from manganize_web.models.generation import (
 )
 from manganize_web.repositories.database_session import DatabaseSession
 from manganize_web.schemas.generation import GenerationStatus
+from manganize_web.services.upload_source import upload_source_service
 
 # Heavy dependencies are lazily imported in methods to speed up server startup
 if TYPE_CHECKING:
@@ -38,10 +39,31 @@ class GeneratorService:
         """Initialize generator service"""
         pass
 
+    def _compose_agent_topic(self, topic: str, source_url: str | None) -> str:
+        """
+        Compose final topic text sent to the researcher agent.
+
+        If a source URL exists, include an explicit tool-usage instruction
+        so the agent reads the uploaded document by itself.
+        """
+        user_topic = topic.strip()
+        if not source_url:
+            return user_topic
+
+        source_instruction = (
+            "添付ドキュメントがあります。以下のURLを `read_document_file` ツールで"
+            "必ず読み込んでから、内容に基づいて構成してください。\n"
+            f"{source_url}"
+        )
+        if user_topic:
+            return f"{user_topic}\n\n{source_instruction}"
+        return source_instruction
+
     async def create_generation_request(
         self,
         topic: str,
         character_name: str,
+        upload_id: str | None,
         db_session: DatabaseSession,
     ) -> str:
         """
@@ -50,20 +72,29 @@ class GeneratorService:
         Args:
             topic: Topic to generate manga about
             character_name: Character to use
+            upload_id: Optional uploaded source ID
             db_session: Database session with repositories
 
         Returns:
             generation_id: UUID of the created generation
         """
+        normalized_topic = topic.strip()
+        if not normalized_topic and not upload_id:
+            raise ValueError("Topic or upload_id is required")
+
+        if upload_id:
+            await upload_source_service.ensure_upload_available(upload_id, db_session)
+
         generation_id = str(uuid.uuid4())
 
         generation = GenerationHistory(
             id=generation_id,
             character_name=character_name,
-            input_topic=topic,
+            input_topic=normalized_topic,
             generated_title="",  # Will be filled after generation
             status=GenerationStatusEnum.PENDING,
             generation_type=GenerationTypeEnum.INITIAL,
+            source_upload_id=upload_id,
             created_at=datetime.now(timezone.utc),
         )
 
@@ -200,6 +231,7 @@ class GeneratorService:
             generation_id,
             generation.input_topic,
             generation.character_name,
+            generation.source_upload_id,
             db_session,
         ):
             yield status
@@ -209,6 +241,7 @@ class GeneratorService:
         generation_id: str,
         topic: str,
         character_name: str,
+        source_upload_id: str | None,
         db_session: DatabaseSession,
     ) -> AsyncGenerator[GenerationStatus, None]:
         """
@@ -218,6 +251,7 @@ class GeneratorService:
             generation_id: UUID for this generation
             topic: Topic to generate manga about
             character_name: Character to use
+            source_upload_id: Optional uploaded source ID
             db_session: Database session with repositories
 
         Yields:
@@ -244,6 +278,14 @@ class GeneratorService:
             agent = ManganizeAgent(character=character)
             graph = agent.compile_graph()
 
+            source_url: str | None = None
+            if source_upload_id:
+                source_url = await upload_source_service.resolve_signed_url(
+                    source_upload_id,
+                    db_session,
+                )
+            effective_topic = self._compose_agent_topic(topic, source_url)
+
             # Update status: Researching
             yield GenerationStatus(
                 id=generation_id,
@@ -255,7 +297,7 @@ class GeneratorService:
             image_data: bytes | None = None
             title: str = ""
             async for chunk in graph.astream(
-                {"topic": topic},
+                {"topic": effective_topic},
                 {"configurable": {"thread_id": generation_id}},
                 stream_mode="updates",
             ):

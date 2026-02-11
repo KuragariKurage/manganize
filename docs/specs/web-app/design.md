@@ -559,6 +559,34 @@ Client                                    Server
 
 ---
 
+## アップロード設計（S3互換）
+
+Web のドキュメントアップロードは、S3 互換 API で抽象化した object storage を利用する。
+実体プロバイダは AWS S3 / Cloudflare R2 / MinIO を環境変数で切り替える。
+
+### フロー
+
+1. `POST /api/upload` でファイルを受け取り、サーバーは object storage に保存
+2. サーバーは `upload_id` と `object_key` を `upload_sources` に保存
+3. `POST /api/generate` は `topic` と `upload_id`（任意）を受け取る
+4. 生成処理開始時に `upload_id` から署名付き GET URL を解決
+5. Researcher への入力に署名URLを埋め込み、`read_document_file` ツールで自律読取させる
+
+### データモデル追加
+
+- `upload_sources`
+  - `id` (UUID)
+  - `object_key`
+  - `original_filename`
+  - `content_type`
+  - `file_size`
+  - `created_at`
+  - `expires_at`
+  - `used_at`
+- `generation_history.source_upload_id` (nullable FK)
+
+---
+
 ## TailwindCSS 設定
 
 ### tailwind.config.js
@@ -608,8 +636,14 @@ npx tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --m
 
 - トピック長: 最大 10,000 文字
 - ファイルサイズ: 最大 10MB
-- ファイル形式: `.txt`, `.md` のみ
+- ファイル形式: `.txt`, `.md`, `.markdown`, `.pdf`
 - キャラクター名: 英数字とアンダースコアのみ
+
+### オブジェクトストレージ制約
+
+- バケットは private 設定とする
+- 署名付き URL は短命（例: 15分）
+- クライアント入力の任意 URL は使用せず、`upload_id` からサーバー側でのみ解決する
 
 ### CSRF 対策
 

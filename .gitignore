@@ -300,3 +300,5 @@ alembic/__pycache__/
 characters/*
 !characters/kurage
 !characters/gpt
+
+localstack-data

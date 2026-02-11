@@ -10,6 +10,7 @@ from manganize_web.config import settings
 from manganize_web.models.character import Character  # noqa: F401
 from manganize_web.models.database import Base
 from manganize_web.models.generation import GenerationHistory  # noqa: F401
+from manganize_web.models.upload_source import UploadSource  # noqa: F401
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config

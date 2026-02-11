@@ -12,11 +12,24 @@ class GenerationCreate(BaseModel):
     """Request schema for creating a new manga generation"""
 
     topic: str = Field(
-        ..., min_length=1, max_length=10000, description="Topic to generate manga about"
+        "", max_length=10000, description="Topic to generate manga about"
     )
     character: str = Field(
         ..., min_length=1, max_length=100, description="Character name to use"
     )
+    upload_id: str | None = Field(
+        default=None,
+        min_length=36,
+        max_length=36,
+        description="Uploaded source ID stored in object storage metadata",
+    )
+
+    @model_validator(mode="after")
+    def validate_input_source(self) -> "GenerationCreate":
+        """Require either topic text or upload_id."""
+        if not self.topic.strip() and not self.upload_id:
+            raise ValueError("Either topic or upload_id must be provided")
+        return self
 
 
 class GenerationResponse(BaseModel):

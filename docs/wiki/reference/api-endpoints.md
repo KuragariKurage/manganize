@@ -22,8 +22,11 @@
 マンガ生成リクエストを作成します。
 
 **Request Body (Form Data)**:
-- `topic` (string, required): マンガにしたいトピック (1-50000文字)
+- `topic` (string, optional): マンガにしたいトピック (0-50000文字)
+- `upload_id` (string, optional): `/api/upload` で発行されたアップロードID
 - `character` (string, required): 使用するキャラクター名
+
+`topic` と `upload_id` は少なくとも片方が必要。
 
 **Response**: HTML partial (`partials/progress.html`)
 
@@ -31,6 +34,7 @@
 ```bash
 curl -X POST http://localhost:8000/api/generate \
   -F "topic=Transformerアーキテクチャについて" \
+  -F "upload_id=7b6f8ccf-0d2d-4d9d-8cd8-8d969f53418f" \
   -F "character=kurage"
 ```
 
@@ -82,7 +86,7 @@ eventSource.addEventListener('progress', (event) => {
 
 ### POST /api/upload
 
-ファイルをアップロードしてテキストを抽出します。
+ファイルを object storage にアップロードし、`upload_id` を発行します。
 
 **Request Body (Form Data)**:
 - `file` (file, required): アップロードするファイル (.txt, .pdf, .md, .markdown)
@@ -91,13 +95,13 @@ eventSource.addEventListener('progress', (event) => {
 **Response**:
 ```json
 {
-  "text": "抽出されたテキスト",
+  "upload_id": "7b6f8ccf-0d2d-4d9d-8cd8-8d969f53418f",
   "filename": "ファイル名"
 }
 ```
 
 **Errors**:
-- `400 Bad Request`: ファイルサイズ超過、サポートされていない形式、テキスト抽出失敗
+- `400 Bad Request`: ファイルサイズ超過、サポートされていない形式
 - `500 Internal Server Error`: その他の処理エラー
 
 **Example**:
