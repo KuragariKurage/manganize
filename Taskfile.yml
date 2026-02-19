@@ -10,11 +10,12 @@ tasks:
 
   init:
     desc: setup local server
+    deps: [docker:up]
     cmds:
       - uv run alembic upgrade head
       - uv run python scripts/seed_characters.py
       - npm install
-      - echo "Setup complete! set env GOOGLE_API_KEY and run 'task web' to launch the app."
+      - echo "Setup complete! set env GOOGLE_API_KEY and run 'task dev' to launch the app."
 
   run:
     desc: Run the application (CLI agent)
@@ -36,8 +37,24 @@ tasks:
     cmds:
       - uv run ty check .
 
+  docker:up:
+    desc: Start Docker services (LocalStack S3)
+    cmds:
+      - docker compose up -d
+
+  docker:down:
+    desc: Stop Docker services
+    cmds:
+      - docker compose down
+
+  docker:logs:
+    desc: Show Docker service logs
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
   dev:fastapi:
     desc: Run the fastapi development server
+    deps: [docker:up]
     cmds:
       - uv run fastapi dev apps/web/manganize_web/main.py --reload-dir apps/web --reload-dir packages/core
 
