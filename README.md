@@ -102,7 +102,7 @@ manganize/                      # Workspace ルート
 uv run alembic upgrade head
 
 # デフォルトキャラクターのシード
-uv run python -m manganize_web.models.seed
+uv run python scripts/seed_characters.py
 
 # TailwindCSS CLI のインストール（TailwindCSS 4.x）
 npm install
@@ -134,10 +134,12 @@ npx @tailwindcss/cli -i apps/web/manganize_web/static/css/input.css -o apps/web/
 ## 開発
 
 ```bash
-task lint       # Ruff リント
-task format     # Ruff フォーマット
-task typecheck  # ty 型チェック
-task dev        # Web 開発サーバー起動
+task lint         # Ruff リント
+task format       # Ruff フォーマット
+task typecheck    # ty 型チェック
+task dev          # Web 開発サーバー起動
+task docker:up    # Docker サービス起動（LocalStack）
+task docker:down  # Docker サービス停止
 ```
 
 詳細: [AGENTS.md](AGENTS.md)

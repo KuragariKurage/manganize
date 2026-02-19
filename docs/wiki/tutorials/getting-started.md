@@ -23,10 +23,10 @@ uv run playwright install chromium
 
 ### 2. 環境変数の設定
 
-`.env.example` を `.env` にコピーして、API キーを設定します：
+`.env` ファイルを作成して API キーを設定します：
 
 ```bash
-cp .env.example .env
+touch .env
 ```
 
 `.env` を編集して `GOOGLE_API_KEY` を設定：
@@ -39,7 +39,7 @@ API キーは [Google AI Studio](https://aistudio.google.com/app/apikey) で取�
 
 ### 3. 初期セットアップ
 
-`task init` で DB マイグレーションとデフォルトキャラクターの登録を一括実行します：
+`task init` で初期セットアップを一括実行します：
 
 ```bash
 task init
@@ -47,8 +47,10 @@ task init
 
 これにより以下が実行されます：
 
+- Docker サービス起動（LocalStack S3）
 - Alembic マイグレーション（SQLite DB の作成・更新）
 - デフォルトキャラクター（くらげちゃん等）のシード
+- npm パッケージのインストール（TailwindCSS CLI）
 
 ## プロジェクト構成
 
