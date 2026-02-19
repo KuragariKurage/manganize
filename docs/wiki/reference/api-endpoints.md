@@ -10,6 +10,7 @@
 - [Character API](#character-api)
 - [History API](#history-api)
 - [Health Check](#health-check)
+- [Pages](#pages)
 
 ---
 
@@ -73,6 +74,20 @@ eventSource.addEventListener('progress', (event) => {
 
 ---
 
+### GET /api/generate/{generation_id}/progress
+
+生成進捗インジケーターのHTML partialを取得します。
+
+**Path Parameters**:
+- `generation_id` (string, required): 生成リクエストのUUID
+
+**Response**: HTML partial (`partials/progress.html`)
+
+**Errors**:
+- `404 Not Found`: 生成リクエストが存在しない
+
+---
+
 ### GET /api/generate/{generation_id}/result
 
 生成結果をHTML partialとして取得します。
@@ -81,6 +96,32 @@ eventSource.addEventListener('progress', (event) => {
 - `generation_id` (string, required): 生成リクエストのUUID
 
 **Response**: HTML partial (`partials/result.html`)
+
+---
+
+### POST /api/generations/{generation_id}/revisions
+
+既存の生成をもとにリビジョン（再生成）リクエストを作成します。
+
+**Path Parameters**:
+- `generation_id` (string, required): 親となる生成リクエストのUUID
+
+**Request Body (JSON)**:
+```json
+{
+  "revision_instructions": "修正の指示内容"
+}
+```
+
+**Response**:
+```json
+{
+  "generation_id": "uuid"
+}
+```
+
+**Errors**:
+- `400 Bad Request`: バリデーションエラー（親生成が存在しない等）
 
 ---
 
@@ -365,11 +406,29 @@ curl -X POST http://localhost:8000/api/upload \
 
 ---
 
+## Pages
+
+ブラウザ向けのページルート。
+
+### GET /generations/{generation_id}/revision-workspace
+
+リビジョン（再生成）ワークスペース画面。既存の生成画像を確認しながら修正指示を入力できます。
+
+**Path Parameters**:
+- `generation_id` (string, required): 生成リクエストのUUID
+
+**Response**: HTML ページ (`revision_workspace.html`)
+
+**Errors**:
+- `404 Not Found`: 生成リクエストが存在しない
+
+---
+
 ## CORS
 
-デフォルトでは `http://localhost:3000` からのCORSリクエストが許可されています。
+デフォルトでは `http://localhost:8000` と `http://127.0.0.1:8000` からのCORSリクエストが許可されています。
 
-設定は `web/config.py` の `cors_origins` で変更可能です。
+設定は `apps/web/manganize_web/config.py` の `cors_origins` で変更可能です。
 
 ---
 

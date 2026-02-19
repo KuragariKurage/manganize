@@ -65,7 +65,7 @@ cd packages/core
 uv sync
 
 # 型チェック
-uv run ty manganize_core
+uv run ty check .
 
 # リント
 uv run ruff check manganize_core
