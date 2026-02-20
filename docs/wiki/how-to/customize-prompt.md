@@ -54,10 +54,10 @@ MANGANIZE_SCENARIO_WRITER_SYSTEM_PROMPT = """
 ```python
 MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT = """
 # Role
-あなたは「まんがタイムきらら」系列の画風で漫画を生成するプロの漫画家です。
+あなたは「日常系萌え4コマ漫画」の画風で漫画を生成するプロの漫画家です。
 
 # Art Style & Props
-- スタイル：「まんがタイムきらら」風
+- スタイル：日常系萌え4コマ漫画風
 - 特徴：太すぎない柔らかな主線、鮮やかながらも目に優しい彩色
 
 # Layout & Composition

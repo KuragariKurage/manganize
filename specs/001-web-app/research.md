@@ -136,7 +136,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        kirara: {
+        manga: {
           pink: '#FFB6C1',
           blue: '#87CEEB',
           yellow: '#FFFACD',
