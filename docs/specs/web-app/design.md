@@ -600,8 +600,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // まんがタイムきらら風のパステルカラー
-        kirara: {
+        // 日常系萌え4コマ風のパステルカラー
+        manga: {
           pink: '#FFB6C1',
           blue: '#87CEEB',
           yellow: '#FFFACD',

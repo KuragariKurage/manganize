@@ -83,7 +83,7 @@ types.Part.from_bytes(data=load_kurage_image(), mime_type="image/png")
 
 ## Image Generation プロンプト
 
-「まんがタイムきらら」風の画像生成：
+日常系萌え4コマ漫画風の画像生成：
 
 ```
 # Art Style & Props
@@ -106,7 +106,7 @@ types.Part.from_bytes(data=load_kurage_image(), mime_type="image/png")
 
 ```diff
 - スタイル：漫画風
-+ スタイル：「まんがタイムきらら」風
++ スタイル：日常系萌え4コマ漫画風
 +     - 特徴：太すぎない柔らかな主線
 ```
 

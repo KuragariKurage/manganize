@@ -104,7 +104,7 @@ Scenario Writer エージェント用。ファクトシートから 4 コマ漫�
 
 ### MANGANIZE_IMAGE_GENERATION_SYSTEM_PROMPT
 
-Image Generator 用。「まんがタイムきらら」風の画像生成指示。
+Image Generator 用。日常系萌え4コマ漫画風の画像生成指示。
 
 ## 環境変数
 
