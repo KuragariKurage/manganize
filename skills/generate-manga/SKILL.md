@@ -10,19 +10,27 @@ Generate manga images from a topic or URL using the manganize CLI.
 
 ## What to do when invoked
 
-1. Run the manganize CLI:
+1. Check if `manganize` is globally installed:
+
+```bash
+which manganize
+```
+
+2. If installed globally, run directly:
+
+```bash
+manganize topic '<topic>' [--character <name>] [--output <path>]
+```
+
+3. If not installed globally, fall back to `uv run` from the repo root:
 
 ```bash
 uv run manganize topic '<topic>' [--character <name>] [--output <path>]
 ```
 
-2. If the `manganize` command is not found, fall back to:
+4. Show the user the saved image path when done.
 
-```bash
-uv run python -m manganize_core.cli topic '<topic>'
-```
-
-3. Show the user the saved image path when done.
+> To install globally (one-time): `uv tool install ./packages/core`
 
 ## Examples
 
