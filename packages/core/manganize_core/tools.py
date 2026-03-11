@@ -13,6 +13,7 @@ from PIL import Image
 from playwright.sync_api import sync_playwright
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from manganize_core.backend import configure_backend
 from manganize_core.character import BaseCharacter
 from manganize_core.prompts import (
     get_image_generation_system_prompt,
@@ -54,6 +55,7 @@ def generate_manga_image(content: str, character: BaseCharacter) -> bytes | None
     """
 
     try:
+        configure_backend()
         client = genai.Client()
 
         response = client.models.generate_content(
@@ -219,6 +221,7 @@ def edit_manga_image(
         修正後の画像バイトデータ（PNG形式）、失敗時はNone
     """
     try:
+        configure_backend()
         client = genai.Client()
         revision_text = _format_revision_payload(revision_payload)
         prepared_base_image, base_image_mime_type = _prepare_revision_base_image(

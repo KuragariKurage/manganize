@@ -13,6 +13,7 @@ dependencies = [
     "langchain>=1.1.0",
     "langchain-community>=0.4.1",
     "langchain-google-genai>=3.2.0",
+    "langchain-google-vertexai>=3.2.2",
     "langgraph>=1.0.4",
     "langgraph-checkpoint-aws>=1.0.2",
     "langgraph-cli[inmem]>=0.4.7",
@@ -21,7 +22,11 @@ dependencies = [
     "playwright>=1.49.0",
     "pyyaml>=6.0.0",
     "tenacity>=9.1.2",
+    "typer>=0.21.1",
 ]
+
+[project.scripts]
+manganize = "manganize_core.cli:main"
 
 [build-system]
 requires = ["hatchling"]

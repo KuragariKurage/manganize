@@ -13,6 +13,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
+from manganize_core.backend import configure_backend, get_langchain_model
 from manganize_core.character import BaseCharacter, KurageChan
 from manganize_core.prompts import (
     get_researcher_system_prompt,
@@ -86,16 +87,18 @@ class ManganizeAgent:
         今日は{today_date}です。
         """
 
+        backend = configure_backend()
+
         self.researcher = create_agent(
             model=researcher_llm
-            or init_chat_model(model="google_genai:gemini-2.5-pro"),
+            or init_chat_model(model=get_langchain_model("gemini-2.5-pro", backend)),
             tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
             system_prompt=SystemMessage(content=get_researcher_system_prompt()),
             response_format=ResearcherAgentOutput,
         )
         self.scenario_writer = create_agent(
             model=scenario_writer_llm
-            or init_chat_model(model="google_genai:gemini-2.5-flash"),
+            or init_chat_model(model=get_langchain_model("gemini-2.5-flash", backend)),
             system_prompt=SystemMessage(
                 content=get_scenario_writer_system_prompt(self.character)
             ),

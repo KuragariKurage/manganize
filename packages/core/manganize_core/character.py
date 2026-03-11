@@ -99,7 +99,7 @@ class KurageChan(BaseCharacter):
 
     def __init__(self, **data: Any):
         # デフォルト値を設定
-        assets_dir = Path(__file__).parents[3] / "characters" / "kurage" / "assets"
+        assets_dir = Path(__file__).parent / "assets" / "kurage"
         super().__init__(
             name="くらがりくらげ",
             nickname="くらげちゃん",
