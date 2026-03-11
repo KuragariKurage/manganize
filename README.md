@@ -14,20 +14,55 @@ uv sync
 # Playwright のインストール
 uv run playwright install chromium
 
-# API キー取得: https://aistudio.google.com/app/apikey
+# 認証（どちらか一方を設定）
+# Option 1: Gemini API キー https://aistudio.google.com/app/apikey
 export GOOGLE_API_KEY="your-api-key-here"
+# Option 2: Vertex AI（ADC）
+# export GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
+# gcloud auth application-default login
 ```
 
-## 使い方
+## CLI の使い方
+
+### インストール（グローバル）
 
 ```bash
-# URL / テキスト / ドキュメントから漫画を生成
-uv run python main.py "https://example.com/article"
-uv run python main.py "Transformerアーキテクチャについて"
-uv run python main.py "/path/to/document.pdf"
+uv tool install ./packages/core
 ```
 
-出力: `output/YYYYMMDD_HHMMSS/` に research_results.txt、scenario.txt、generated_image.png
+インストール後は `uv run` なしに直接使えます：
+
+```bash
+# テキストから漫画を生成
+manganize topic "Transformerアーキテクチャについて"
+
+# URL から漫画を生成
+manganize topic "https://arxiv.org/abs/2303.08774"
+
+# キャラクターを指定
+manganize topic "Rustの所有権システム" --character gpt
+
+# 出力先を指定
+manganize topic "量子コンピュータ" --output ~/Desktop/manga/
+
+# 利用可能なキャラクター一覧
+manganize characters
+```
+
+### uv run で使う（インストール不要）
+
+```bash
+uv run manganize topic "https://example.com/article"
+```
+
+出力: `output/YYYYMMDD_HHMMSS.png`
+
+### アップデート・アンインストール
+
+```bash
+uv tool install --reinstall ./packages/core   # アップデート
+uv tool uninstall manganize-core              # アンインストール
+```
 
 ## アーキテクチャ
 
