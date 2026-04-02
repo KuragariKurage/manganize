@@ -669,9 +669,9 @@ def explore_repository(path: str, focus: str = "") -> str:
     """
     repo_path = Path(path).expanduser().resolve()
     if not repo_path.exists():
-        raise FileNotFoundError(f"パスが見つかりません: {path}")
+        return f"パスが見つかりません: {path}（パスを確認してください）"
     if not repo_path.is_dir():
-        raise ValueError(f"ディレクトリではありません: {path}")
+        return f"ディレクトリではありません: {path}（ファイルではなくディレクトリを指定してください）"
 
     ignore_spec = _load_ignore_spec(repo_path)
     sections: list[str] = []
@@ -682,15 +682,21 @@ def explore_repository(path: str, focus: str = "") -> str:
         sections.append(f"注目観点: {focus}")
 
     # Directory tree
-    sections.append("\n## ディレクトリ構造")
-    sections.append(f"```\n{_build_directory_tree(repo_path, ignore_spec)}\n```")
+    try:
+        sections.append("\n## ディレクトリ構造")
+        sections.append(f"```\n{_build_directory_tree(repo_path, ignore_spec)}\n```")
+    except Exception as e:
+        sections.append(f"\n## ディレクトリ構造\n取得に失敗しました: {e}")
 
     # Language stats
-    lang_stats = _collect_language_stats(repo_path, ignore_spec)
-    if lang_stats:
-        sections.append("\n## 使用言語・ファイル統計")
-        for ext, count in lang_stats.items():
-            sections.append(f"- `{ext}`: {count}ファイル")
+    try:
+        lang_stats = _collect_language_stats(repo_path, ignore_spec)
+        if lang_stats:
+            sections.append("\n## 使用言語・ファイル統計")
+            for ext, count in lang_stats.items():
+                sections.append(f"- `{ext}`: {count}ファイル")
+    except Exception as e:
+        sections.append(f"\n## 使用言語・ファイル統計\n取得に失敗しました: {e}")
 
     # Git history (if it's a git repo)
     try:
@@ -700,10 +706,15 @@ def explore_repository(path: str, focus: str = "") -> str:
     except InvalidGitRepositoryError:
         sections.append("\n## Git履歴")
         sections.append("Gitリポジトリではありません（Git履歴分析をスキップ）")
+    except Exception as e:
+        sections.append(f"\n## Git履歴\n取得に失敗しました: {e}")
 
     # Key project files
-    sections.append("\n## 主要ファイル")
-    sections.append(_read_key_files(repo_path, ignore_spec))
+    try:
+        sections.append("\n## 主要ファイル")
+        sections.append(_read_key_files(repo_path, ignore_spec))
+    except Exception as e:
+        sections.append(f"\n## 主要ファイル\n取得に失敗しました: {e}")
 
     # Try repomix for additional context
     repomix_output = _try_repomix(repo_path)
