@@ -1,10 +1,15 @@
+import shutil
+import subprocess
 import tempfile
+from collections import Counter
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+import pathspec
 import requests
+from git import InvalidGitRepositoryError, Repo
 from google import genai
 from google.genai import types
 from langchain.tools import tool
@@ -399,3 +404,316 @@ def read_document_file(source: str) -> str:
 
         result = md.convert(str(file_path))
         return result.text_content
+
+
+# --- Repository exploration constants ---
+
+REPO_MAX_FILE_BYTES = 100_000
+REPO_MAX_TOTAL_BYTES = 1_000_000
+REPO_TREE_MAX_DEPTH = 4
+REPO_GIT_LOG_LIMIT = 30
+
+SENSITIVE_PATTERNS = [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "credentials*",
+    "*secret*",
+    "*.p12",
+    "*.pfx",
+]
+
+BINARY_EXTENSIONS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".ico",
+    ".svg",
+    ".webp",
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".avi",
+    ".mov",
+    ".mkv",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".bz2",
+    ".7z",
+    ".rar",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".eot",
+    ".pyc",
+    ".pyo",
+    ".so",
+    ".dll",
+    ".dylib",
+    ".o",
+    ".exe",
+    ".bin",
+    ".dat",
+    ".db",
+    ".sqlite",
+    ".pdf",
+}
+
+
+def _load_gitignore_spec(repo_path: Path) -> pathspec.PathSpec:
+    """Load .gitignore patterns from a repository."""
+    gitignore = repo_path / ".gitignore"
+    patterns: list[str] = []
+    if gitignore.exists():
+        patterns = gitignore.read_text(encoding="utf-8", errors="ignore").splitlines()
+    # Always ignore .git directory
+    patterns.append(".git/")
+    return pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+
+
+def _is_sensitive(rel_path: str) -> bool:
+    """Check if a relative path matches sensitive file patterns."""
+    sensitive_spec = pathspec.PathSpec.from_lines("gitwildmatch", SENSITIVE_PATTERNS)
+    return sensitive_spec.match_file(rel_path)
+
+
+def _build_directory_tree(repo_path: Path, ignore_spec: pathspec.PathSpec) -> str:
+    """Build a directory tree string up to REPO_TREE_MAX_DEPTH."""
+    lines: list[str] = [repo_path.name + "/"]
+
+    def _walk(current: Path, prefix: str, depth: int) -> None:
+        if depth >= REPO_TREE_MAX_DEPTH:
+            return
+        try:
+            entries = sorted(current.iterdir(), key=lambda p: (p.is_file(), p.name))
+        except PermissionError:
+            return
+
+        visible: list[Path] = []
+        for entry in entries:
+            rel = str(entry.relative_to(repo_path))
+            if entry.is_dir():
+                rel += "/"
+            if ignore_spec.match_file(rel):
+                continue
+            visible.append(entry)
+
+        for i, entry in enumerate(visible):
+            is_last = i == len(visible) - 1
+            connector = "└── " if is_last else "├── "
+            suffix = "/" if entry.is_dir() else ""
+            lines.append(f"{prefix}{connector}{entry.name}{suffix}")
+            if entry.is_dir():
+                extension = "    " if is_last else "│   "
+                _walk(entry, prefix + extension, depth + 1)
+
+    _walk(repo_path, "", 0)
+    return "\n".join(lines)
+
+
+def _collect_language_stats(
+    repo_path: Path, ignore_spec: pathspec.PathSpec
+) -> dict[str, int]:
+    """Count files by extension, ignoring gitignored and binary files."""
+    counter: Counter[str] = Counter()
+    for file in repo_path.rglob("*"):
+        if not file.is_file():
+            continue
+        rel = str(file.relative_to(repo_path))
+        if ignore_spec.match_file(rel):
+            continue
+        ext = file.suffix.lower()
+        if ext in BINARY_EXTENSIONS or not ext:
+            continue
+        counter[ext] += 1
+    return dict(counter.most_common(15))
+
+
+def _analyze_git_history(repo: Repo) -> str:
+    """Analyze recent git history and return a summary."""
+    lines: list[str] = []
+    commits = list(repo.iter_commits(max_count=REPO_GIT_LOG_LIMIT))
+    if not commits:
+        return "Git履歴なし（コミットが見つかりません）"
+
+    lines.append(f"総コミット数（直近{REPO_GIT_LOG_LIMIT}件まで）: {len(commits)}")
+
+    # Recent commits summary
+    lines.append("\n### 直近のコミット")
+    for commit in commits[:10]:
+        date = commit.committed_datetime.strftime("%Y-%m-%d")
+        msg = str(commit.message).strip().split("\n")[0][:80]
+        lines.append(f"- `{date}` {msg}")
+
+    # Hotspot analysis: files changed most frequently
+    file_change_count: Counter[str] = Counter()
+    for commit in commits:
+        try:
+            if commit.parents:
+                diffs = commit.diff(commit.parents[0])
+            else:
+                diffs = commit.diff(None)
+            for diff in diffs:
+                path = diff.b_path or diff.a_path
+                if path:
+                    file_change_count[path] += 1
+        except Exception:
+            continue
+
+    if file_change_count:
+        lines.append("\n### ホットスポット（変更頻度の高いファイル）")
+        for path, count in file_change_count.most_common(10):
+            lines.append(f"- `{path}` ({count}回変更)")
+
+    # Contributors
+    authors: Counter[str] = Counter()
+    for commit in commits:
+        author_name = commit.author.name or "Unknown"
+        authors[author_name] += 1
+    if authors:
+        lines.append("\n### コントリビューター")
+        for author, count in authors.most_common(5):
+            lines.append(f"- {author} ({count}コミット)")
+
+    return "\n".join(lines)
+
+
+def _read_key_files(repo_path: Path, ignore_spec: pathspec.PathSpec) -> str:
+    """Read key project files (README, config, entry points)."""
+    key_file_candidates = [
+        "README.md",
+        "README.rst",
+        "README.txt",
+        "README",
+        "pyproject.toml",
+        "package.json",
+        "Cargo.toml",
+        "go.mod",
+        "Makefile",
+        "Taskfile.yml",
+        "docker-compose.yml",
+    ]
+    lines: list[str] = []
+    total_bytes = 0
+
+    for name in key_file_candidates:
+        fpath = repo_path / name
+        if not fpath.exists() or not fpath.is_file():
+            continue
+        rel = str(fpath.relative_to(repo_path))
+        if ignore_spec.match_file(rel) or _is_sensitive(rel):
+            continue
+        try:
+            size = fpath.stat().st_size
+            if size > REPO_MAX_FILE_BYTES:
+                lines.append(f"\n### {name} (先頭のみ、{size}バイト)")
+                content = fpath.read_text(encoding="utf-8", errors="ignore")[
+                    :REPO_MAX_FILE_BYTES
+                ]
+            else:
+                lines.append(f"\n### {name}")
+                content = fpath.read_text(encoding="utf-8", errors="ignore")
+
+            total_bytes += len(content.encode("utf-8"))
+            if total_bytes > REPO_MAX_TOTAL_BYTES:
+                lines.append("（合計サイズ上限に達したため省略）")
+                break
+            lines.append(f"```\n{content}\n```")
+        except Exception:
+            continue
+
+    return "\n".join(lines) if lines else "主要ファイルが見つかりませんでした"
+
+
+def _try_repomix(repo_path: Path) -> str | None:
+    """Try to run repomix if available. Returns summary or None."""
+    if not shutil.which("repomix"):
+        return None
+    try:
+        result = subprocess.run(
+            ["repomix", "--style", "markdown", "--output-show-line-numbers", "false"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=str(repo_path),
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            output = result.stdout.strip()
+            # Truncate if too large
+            if len(output) > REPO_MAX_TOTAL_BYTES:
+                return (
+                    output[:REPO_MAX_TOTAL_BYTES]
+                    + "\n\n（repomix出力が大きいため省略）"
+                )
+            return output
+    except (subprocess.TimeoutExpired, Exception):
+        pass
+    return None
+
+
+@tool
+def explore_repository(path: str, focus: str = "") -> str:
+    """ローカルのGitリポジトリまたはディレクトリを探索し、構造・履歴・コードの概要を返す。
+
+    リポジトリの全体像を把握し、漫画のネタになる面白いポイントを
+    見つけるために使用する。ディレクトリ構造、使用言語、Git履歴の
+    ハイライト、主要ファイルの内容を分析する。
+
+    Args:
+        path: リポジトリのローカルパス（絶対パスまたは相対パス）
+        focus: 特に注目したい観点（例: "アーキテクチャ", "Git履歴", "設計思想"）。
+               空の場合は全体的な分析を行う。
+
+    Returns:
+        リポジトリ分析の結果（Markdown形式）
+    """
+    repo_path = Path(path).expanduser().resolve()
+    if not repo_path.exists():
+        raise FileNotFoundError(f"パスが見つかりません: {path}")
+    if not repo_path.is_dir():
+        raise ValueError(f"ディレクトリではありません: {path}")
+
+    ignore_spec = _load_gitignore_spec(repo_path)
+    sections: list[str] = []
+
+    # Header
+    sections.append(f"# リポジトリ分析: {repo_path.name}")
+    if focus:
+        sections.append(f"注目観点: {focus}")
+
+    # Directory tree
+    sections.append("\n## ディレクトリ構造")
+    sections.append(f"```\n{_build_directory_tree(repo_path, ignore_spec)}\n```")
+
+    # Language stats
+    lang_stats = _collect_language_stats(repo_path, ignore_spec)
+    if lang_stats:
+        sections.append("\n## 使用言語・ファイル統計")
+        for ext, count in lang_stats.items():
+            sections.append(f"- `{ext}`: {count}ファイル")
+
+    # Git history (if it's a git repo)
+    try:
+        repo = Repo(str(repo_path))
+        sections.append("\n## Git履歴")
+        sections.append(_analyze_git_history(repo))
+    except InvalidGitRepositoryError:
+        sections.append("\n## Git履歴")
+        sections.append("Gitリポジトリではありません（Git履歴分析をスキップ）")
+
+    # Key project files
+    sections.append("\n## 主要ファイル")
+    sections.append(_read_key_files(repo_path, ignore_spec))
+
+    # Try repomix for additional context
+    repomix_output = _try_repomix(repo_path)
+    if repomix_output:
+        sections.append("\n## Repomix 分析")
+        sections.append(repomix_output)
+
+    return "\n".join(sections)

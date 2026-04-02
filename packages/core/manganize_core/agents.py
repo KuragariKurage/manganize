@@ -20,6 +20,7 @@ from manganize_core.prompts import (
     get_scenario_writer_system_prompt,
 )
 from manganize_core.tools import (
+    explore_repository,
     generate_manga_image,
     read_document_file,
     retrieve_webpage,
@@ -92,7 +93,12 @@ class ManganizeAgent:
         self.researcher = create_agent(
             model=researcher_llm
             or init_chat_model(model=get_langchain_model("gemini-2.5-pro", backend)),
-            tools=[retrieve_webpage, DuckDuckGoSearchRun(), read_document_file],
+            tools=[
+                retrieve_webpage,
+                DuckDuckGoSearchRun(),
+                read_document_file,
+                explore_repository,
+            ],
             system_prompt=SystemMessage(content=get_researcher_system_prompt()),
             response_format=ResearcherAgentOutput,
         )
