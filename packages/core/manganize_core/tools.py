@@ -465,21 +465,16 @@ BINARY_EXTENSIONS = {
 }
 
 
-def _load_gitignore_spec(repo_path: Path) -> pathspec.PathSpec:
-    """Load .gitignore patterns from a repository."""
+def _load_ignore_spec(repo_path: Path) -> pathspec.PathSpec:
+    """Load .gitignore + built-in sensitive patterns into a single PathSpec."""
     gitignore = repo_path / ".gitignore"
     patterns: list[str] = []
     if gitignore.exists():
         patterns = gitignore.read_text(encoding="utf-8", errors="ignore").splitlines()
-    # Always ignore .git directory
+    # Always ignore .git directory and sensitive files
     patterns.append(".git/")
+    patterns.extend(SENSITIVE_PATTERNS)
     return pathspec.PathSpec.from_lines("gitwildmatch", patterns)
-
-
-def _is_sensitive(rel_path: str) -> bool:
-    """Check if a relative path matches sensitive file patterns."""
-    sensitive_spec = pathspec.PathSpec.from_lines("gitwildmatch", SENSITIVE_PATTERNS)
-    return sensitive_spec.match_file(rel_path)
 
 
 def _build_directory_tree(repo_path: Path, ignore_spec: pathspec.PathSpec) -> str:
@@ -606,7 +601,7 @@ def _read_key_files(repo_path: Path, ignore_spec: pathspec.PathSpec) -> str:
         if not fpath.exists() or not fpath.is_file():
             continue
         rel = str(fpath.relative_to(repo_path))
-        if ignore_spec.match_file(rel) or _is_sensitive(rel):
+        if ignore_spec.match_file(rel):
             continue
         try:
             size = fpath.stat().st_size
@@ -678,7 +673,7 @@ def explore_repository(path: str, focus: str = "") -> str:
     if not repo_path.is_dir():
         raise ValueError(f"ディレクトリではありません: {path}")
 
-    ignore_spec = _load_gitignore_spec(repo_path)
+    ignore_spec = _load_ignore_spec(repo_path)
     sections: list[str] = []
 
     # Header
