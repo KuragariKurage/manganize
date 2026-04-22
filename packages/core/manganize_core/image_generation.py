@@ -101,10 +101,10 @@ def _generate_google(content: str, character: BaseCharacter) -> bytes:
 
 
 def _generate_openai(content: str, character: BaseCharacter) -> bytes:
-    """Generate via OpenAI gpt-image-2 (1024x1536, quality=high).
+    """Generate via OpenAI gpt-image-2 using the ``images.edit`` endpoint.
 
-    Character reference images are embedded textually via the system prompt;
-    the OpenAI Images ``generate`` endpoint does not accept image inputs.
+    Character portrait and full-body images are passed as multimodal references
+    so the model can match the character's appearance, mirroring the Google path.
     """
     from openai import OpenAI
 
@@ -113,10 +113,14 @@ def _generate_openai(content: str, character: BaseCharacter) -> bytes:
 
     prompt = get_image_generation_system_prompt(character) + f"\n\n脚本:\n{content}"
 
-    # Note: gpt-image-* models return b64_json by default. Passing
-    # ``response_format`` or ``n`` is rejected by the API, so we omit them.
-    response = client.images.generate(
+    # gpt-image-* returns b64_json by default; ``response_format`` and ``n`` are
+    # rejected by the API so we omit them.
+    response = client.images.edit(
         model=model,
+        image=[
+            ("portrait.png", character.get_portrait_bytes(), "image/png"),
+            ("full_body.png", character.get_full_body_bytes(), "image/png"),
+        ],
         prompt=prompt,
         size=_OPENAI_IMAGE_SIZE,
         quality=_OPENAI_IMAGE_QUALITY,

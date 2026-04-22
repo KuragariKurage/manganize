@@ -136,9 +136,7 @@ def topic(
 
     if resolved_provider == ImageProvider.OPENAI:
         typer.echo(
-            "⚠️  OpenAI 画像プロバイダー選択中: "
-            "Google Search grounding は利用できず、キャラクター参照画像は "
-            "テキストプロンプトにのみ埋め込まれます。",
+            "⚠️  OpenAI 画像プロバイダー選択中: Google Search grounding は利用できません。",
             err=True,
         )
 
