@@ -15,7 +15,11 @@ manganize-core = { workspace = true }
 manganize-web = { workspace = true }
 
 [dependency-groups]
-dev = ["ruff>=0.14.7", "ty>=0.0.7"]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.14.7",
+    "ty>=0.0.7",
+]
 
 [tool.uv.workspace]
 members = ["packages/*", "apps/*"]

@@ -20,10 +20,12 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from manganize_core.backend import configure_backend
 from manganize_core.character import BaseCharacter
-from manganize_core.prompts import (
-    get_image_generation_system_prompt,
-    get_image_revision_system_prompt,
+from manganize_core.image_generation import (
+    ImageProvider,
+    generate_image,
+    resolve_image_provider,
 )
+from manganize_core.prompts import get_image_revision_system_prompt
 
 REVISION_IMAGE_TARGET_BYTES = 1_500_000
 REVISION_IMAGE_MIN_QUALITY = 65
@@ -32,23 +34,25 @@ REVISION_IMAGE_MAX_LONG_EDGE = 2048
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=15))
-def generate_manga_image(content: str, character: BaseCharacter) -> bytes | None:
+def generate_manga_image(
+    content: str,
+    character: BaseCharacter,
+    provider: ImageProvider | None = None,
+) -> bytes | None:
     """マンガの作画を行うエージェントです。
 
-    指定されたコンテンツとキャラクターに基づいて、Gemini 3 Pro Image Previewモデルを使用して
-    漫画風の画像を生成します。生成された画像はPNG形式のバイト列として返されます。
+    指定されたコンテンツとキャラクターに基づいて、選択されたプロバイダー
+    （Google Gemini または OpenAI gpt-image-2）で漫画風の画像を生成します。
+    生成された画像はPNG形式のバイト列として返されます。
 
     Args:
         content: 画像生成のためのコンテンツ。漫画化したいテキストやストーリーの説明を含む。
         character: 使用するキャラクター情報
+        provider: 使用する画像プロバイダー。``None`` の場合は ``IMAGE_PROVIDER``
+            環境変数または既定値(Google)から解決する。
 
     Returns:
         生成された画像のバイトデータ（PNG形式）、失敗時はNone
-
-    Note:
-        - 画像は9:16のアスペクト比、2Kサイズで生成されます
-        - Google Searchツールが有効化されており、必要に応じて検索が実行されます
-        - 生成された画像にはコミックスのロゴなどの明示的なスタイル表記は含まれません
 
     Example:
         >>> from manganize_core.character import KurageChan
@@ -58,47 +62,14 @@ def generate_manga_image(content: str, character: BaseCharacter) -> bytes | None
         >>>     image = Image.open(io.BytesIO(image_data))
         >>>     image.save("manga.png")
     """
-
     try:
-        configure_backend()
-        client = genai.Client()
-
-        response = client.models.generate_content(
-            model="gemini-3-pro-image-preview",
-            contents=[
-                types.Part.from_bytes(
-                    data=character.get_portrait_bytes(),
-                    mime_type="image/png",
-                ),
-                types.Part.from_bytes(
-                    data=character.get_full_body_bytes(),
-                    mime_type="image/png",
-                ),
-                types.Part.from_text(text=f"脚本:\n{content}"),
-            ],
-            config=types.GenerateContentConfig(
-                system_instruction=get_image_generation_system_prompt(character),
-                image_config=types.ImageConfig(aspect_ratio="9:16", image_size="2K"),
-                tools=[{"google_search": {}}],
-            ),
-        )
-
-        if response.parts is None:
-            return None
-
-        image_parts = [part for part in response.parts if part.inline_data]
-
-        if image_parts:
-            # inline_dataから直接バイトデータを取得
-            image_data = (
-                image_parts[0].inline_data.data if image_parts[0].inline_data else None
-            )
-            if image_data:
-                return image_data
+        resolved_provider = provider or resolve_image_provider()
+        return generate_image(content, character, resolved_provider)
+    except RuntimeError:
+        # Provider already raised with a clear Japanese message — pass through.
+        raise
     except Exception as e:
         raise RuntimeError(f"画像生成に失敗しました: {e}") from e
-
-    return None
 
 
 def _format_revision_payload(revision_payload: dict[str, Any]) -> str:

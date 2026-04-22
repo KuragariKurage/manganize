@@ -12,9 +12,11 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
+from tenacity import RetryError
 
 from manganize_core.backend import configure_backend, get_langchain_model
 from manganize_core.character import BaseCharacter, KurageChan
+from manganize_core.image_generation import ImageProvider, resolve_image_provider
 from manganize_core.prompts import (
     get_researcher_system_prompt,
     get_scenario_writer_system_prompt,
@@ -77,9 +79,13 @@ class ManganizeAgent:
         researcher_llm: BaseChatModel | None = None,
         scenario_writer_llm: BaseChatModel | None = None,
         relevance_threshold: float = 0.5,
+        image_provider: ImageProvider | None = None,
     ):
         # キャラクターの設定（デフォルトはくらげちゃん）
         self.character = character or KurageChan()
+        # Eagerly resolve provider so misconfig (e.g. invalid IMAGE_PROVIDER env var)
+        # surfaces at construction time instead of being swallowed by the retry loop.
+        self.image_provider = image_provider or resolve_image_provider()
 
         today_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -160,7 +166,14 @@ class ManganizeAgent:
         )
 
     def _image_generator_node(self, state: ManganizeAgentState) -> Command:
-        result = generate_manga_image(state["scenario"], self.character)
+        try:
+            result = generate_manga_image(
+                state["scenario"], self.character, self.image_provider
+            )
+        except RetryError:
+            # All retries exhausted — let the caller handle the None result
+            # instead of crashing with a tenacity exception.
+            result = None
         return Command(update={"generated_image": result}, goto=END)
 
     def _check_relevance(
